@@ -1,3 +1,6 @@
+
+'网上找的vb.net的钩子
+
 ﻿Imports System.Reflection
 Imports System.Threading, System.ComponentModel
 Imports System.Runtime.InteropServices
