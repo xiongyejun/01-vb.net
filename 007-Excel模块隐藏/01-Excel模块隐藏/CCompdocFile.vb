@@ -300,7 +300,7 @@ Public Class CCompdocFile
     End Function
 
     'arr_address 构建1个查找地址的数组，在查找模块的时候用，因为数据区域不一定是连续的
-    '            第1列代表当前stream字节下标，第2列是对应的地址，如：
+    '            第1列代表当前stream字节下标（没起作用），第2列是对应的地址（对应file_byte的下标），如：
     '           0   100
     '           1   164
     '           2   228
@@ -343,10 +343,10 @@ Public Class CCompdocFile
                 Else
                     n_size = stream_len \ 64 + 1
                 End If
-
+                '需要n_size个sector来存储
                 ReDim arr_address(n_size - 1, 1)
                 ReDim arr_result(n_size * 64 - 1)
-
+                '第1个短扇区的下标
                 short_SID = .first_SID
                 '            start_address = VarPtr(file_byte(0)) + arr_SSAT(short_SID)
 
@@ -498,7 +498,7 @@ Public Class CCompdocFile
         re = Nothing
         match_coll = Nothing
 
-        Return i - 1
+        Return i
     End Function
     '根据ModuleName，将找到的模块在PROJECT中的byte修改为0D0A
     Function HideModule(ModuleName As String) As Integer

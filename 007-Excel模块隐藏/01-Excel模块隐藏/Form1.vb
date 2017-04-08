@@ -254,7 +254,7 @@
         For i As Integer = 0 To k_font - 1
             Me.lv_hex.Items(arr_font(i)).ForeColor = Color.Red
         Next
-        lb_tishi.Text = Split(dir_name, vbNullChar)(0) & ":ITEMS " & Items.Length & "  RED " & k_font
+        lb_tishi.Text = Split(dir_name, vbNullChar)(0) & ":ITEMS " & Items.Length & "  RED " & k_font & "  if_short=" & if_short.ToString
 
         Return 0
     End Function
@@ -449,7 +449,7 @@
             Me.gb_vba.Controls.Clear()
 
             i_top = 15
-            For i = 0 To k_module
+            For i = 0 To k_module - 1
                 Dim cb As System.Windows.Forms.CheckBox = New CheckBox
                 cb.Text = cls_cf.arr_Module(i).ModuleName
                 cb.Width = gb_vba.Width - 10
