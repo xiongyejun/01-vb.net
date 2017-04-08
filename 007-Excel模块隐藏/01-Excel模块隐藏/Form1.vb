@@ -442,7 +442,7 @@
         Dim i_top As Integer = Me.tree_dir.Height + Me.tree_dir.Top
         gb_vba.Top = i_top + 15
         gb_vba.Left = 5
-        Me.gb_vba.Width = Me.Width - 500
+        Me.gb_vba.Width = 500
 
         Dim k_module As Integer = cls_cf.GetModule()
         If k_module > 0 Then

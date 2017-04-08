@@ -8,10 +8,10 @@ Imports System.Runtime.InteropServices
 
 '查看程序集特性的值
 
-<Assembly: AssemblyTitle("01-Excel模块隐藏")>
+<Assembly: AssemblyTitle("Module")>
 <Assembly: AssemblyDescription("")>
 <Assembly: AssemblyCompany("")>
-<Assembly: AssemblyProduct("01-Excel模块隐藏")>
+<Assembly: AssemblyProduct("Module")>
 <Assembly: AssemblyCopyright("Copyright ©  2017")>
 <Assembly: AssemblyTrademark("")>
 

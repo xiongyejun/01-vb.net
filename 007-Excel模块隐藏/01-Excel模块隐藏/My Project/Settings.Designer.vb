@@ -63,10 +63,10 @@ Namespace My
      Global.System.Runtime.CompilerServices.CompilerGeneratedAttribute()> _
     Friend Module MySettingsProperty
 
-        <Global.System.ComponentModel.Design.HelpKeywordAttribute("My.Settings")> _
-        Friend ReadOnly Property Settings() As Global._01_Excel模块隐藏.My.MySettings
+        <Global.System.ComponentModel.Design.HelpKeywordAttribute("My.Settings")>
+        Friend ReadOnly Property Settings() As MySettings
             Get
-                Return Global._01_Excel模块隐藏.My.MySettings.Default
+                Return MySettings.Default
             End Get
         End Property
     End Module
