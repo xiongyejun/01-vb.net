@@ -7,6 +7,7 @@
     Friend WithEvents tsm_VBA As System.Windows.Forms.ToolStripMenuItem
     Friend WithEvents tsm_HideModule As System.Windows.Forms.ToolStripMenuItem
     Friend WithEvents tsm_UnHideModule As System.Windows.Forms.ToolStripMenuItem
+    Friend WithEvents tsm_ReWritePROJECT As System.Windows.Forms.ToolStripMenuItem
 
     Private WithEvents lv_hex As System.Windows.Forms.ListView
     Private WithEvents tree_dir As System.Windows.Forms.TreeView
@@ -14,6 +15,7 @@
     Private WithEvents btnVBA As System.Windows.Forms.Button
 
     Private gb_vba As System.Windows.Forms.GroupBox
+    Private gb_workspace As System.Windows.Forms.GroupBox
     Private lb_tishi As System.Windows.Forms.Label
 
     Dim cls_cf As CCompdocFile
@@ -34,13 +36,14 @@
         Me.tsm_VBA = New System.Windows.Forms.ToolStripMenuItem()
         Me.tsm_HideModule = New System.Windows.Forms.ToolStripMenuItem()
         Me.tsm_UnHideModule = New System.Windows.Forms.ToolStripMenuItem()
+        Me.tsm_ReWritePROJECT = New System.Windows.Forms.ToolStripMenuItem()
         '
         'MenuStrip1
         Me.MenuStrip1.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.菜单ToolStripMenuItem})
         Me.MenuStrip1.Text = "MenuStrip1"
         '
         '菜单ToolStripMenuItem
-        Me.菜单ToolStripMenuItem.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.选择文件ToolStripMenuItem, Me.tsm_VBA, Me.tsm_HideModule, Me.tsm_UnHideModule})
+        Me.菜单ToolStripMenuItem.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.选择文件ToolStripMenuItem, Me.tsm_VBA, Me.tsm_HideModule, Me.tsm_UnHideModule, Me.tsm_ReWritePROJECT})
         Me.菜单ToolStripMenuItem.Text = "菜单"
         Me.菜单ToolStripMenuItem.Image = System.Drawing.SystemIcons.Information.ToBitmap
         '
@@ -49,13 +52,16 @@
         Me.选择文件ToolStripMenuItem.Image = System.Drawing.SystemIcons.Shield.ToBitmap
 
         Me.tsm_VBA.Text = "查找模块"        '
-        Me.tsm_VBA.Image = System.Drawing.SystemIcons.Question.ToBitmap
+        tsm_VBA.Image = System.Drawing.SystemIcons.Question.ToBitmap
 
-        Me.tsm_HideModule.Text = "隐藏模块"        '
+        tsm_HideModule.Text = "隐藏模块"        '
         Me.tsm_HideModule.Image = System.Drawing.SystemIcons.Hand.ToBitmap
 
         Me.tsm_UnHideModule.Text = "取消隐藏"        '
         Me.tsm_UnHideModule.Image = System.Drawing.SystemIcons.Asterisk.ToBitmap
+
+        Me.tsm_ReWritePROJECT.Text = "隐藏ReWritePROJECT"        '
+        Me.tsm_ReWritePROJECT.Image = System.Drawing.SystemIcons.Error.ToBitmap
 
         lb_tishi = New Label
         With lb_tishi
@@ -89,6 +95,10 @@
         End With
 
         gb_vba = New GroupBox
+        gb_vba.Text = "Module"
+
+        gb_workspace = New GroupBox
+        gb_workspace.Text = "Workspace"
 
         Me.Width = tree_dir.Width + lv_hex.Width + 50
         Me.Height = i_HEIGHT + 100
@@ -102,6 +112,7 @@
         Me.Controls.Add(tree_dir)
         Me.Controls.Add(lv_hex)
         Me.Controls.Add(gb_vba)
+        Me.Controls.Add(gb_workspace)
         Me.Controls.Add(lb_tishi)
 
         Me.WindowState = FormWindowState.Maximized
@@ -109,7 +120,7 @@
 
     Private Sub Form1_Resize(sender As Object, e As EventArgs) Handles Me.Resize
         Try
-            Me.lv_hex.Height = Me.Height - 300
+            Me.lv_hex.Height = Me.Height - 400
             Me.lv_hex.Width = Me.Width - Me.tree_dir.Width - 50
             Me.tree_dir.Height = Me.lv_hex.Height
             Me.lb_tishi.Top = Me.lv_hex.Top + Me.lv_hex.Height
@@ -438,11 +449,11 @@
     End Sub
 
     Private Sub tsm_VBA_Click(sender As Object, e As EventArgs) Handles tsm_VBA.Click
-
         Dim i_top As Integer = Me.tree_dir.Height + Me.tree_dir.Top
-        gb_vba.Top = i_top + 15
+        gb_vba.Top = i_top + 15 : gb_workspace.Top = gb_vba.Top
         gb_vba.Left = 5
-        Me.gb_vba.Width = 500
+        Me.gb_vba.Width = 300 : gb_workspace.Left = Me.gb_vba.Width + Me.gb_vba.Left
+        gb_workspace.Width = Me.gb_vba.Width
 
         Dim k_module As Integer = cls_cf.GetModule()
         If k_module > 0 Then
@@ -458,9 +469,19 @@
 
                 i_top = i_top + cb.Height + 5
             Next i
-
             gb_vba.Height = i_top + 10
 
+            i_top = 15
+            For i = 0 To cls_cf.arr_Workspace.Length - 1
+                Dim cb As System.Windows.Forms.CheckBox = New CheckBox
+                cb.Text = cls_cf.arr_Workspace(i).Str
+                cb.Width = gb_workspace.Width - 10
+                cb.Top = i_top
+                gb_workspace.Controls.Add(cb)
+
+                i_top = i_top + cb.Height + 5
+            Next
+            gb_workspace.Height = i_top + 10
         End If
     End Sub
 
@@ -474,6 +495,15 @@
         Next
     End Sub
 
+    Private Sub tsm_ReWritePROJECT_Click(sender As Object, e As EventArgs) Handles tsm_ReWritePROJECT.Click
+        For Each ct As Control In Me.gb_vba.Controls
+            If CType(ct, CheckBox).Checked Then
+                If 1 = cls_cf.ReWritePROJECT(CType(ct, CheckBox).Text) Then
+                    tsm_VBA_Click(sender, e)
+                End If
+            End If
+        Next
+    End Sub
     Private Sub tsm_UnHideModule_Click(sender As Object, e As EventArgs) Handles tsm_UnHideModule.Click
         Dim ct_text As String
         Dim index_module As Integer = 0

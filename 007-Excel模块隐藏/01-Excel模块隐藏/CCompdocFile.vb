@@ -60,6 +60,13 @@ Public Class CCompdocFile
         Dim StartAddress As Integer
         Dim Size As Integer
         Dim ArrAddress() As Integer
+        Dim WorkspaceIndex As Integer
+    End Structure
+
+    Structure Workspace
+        Dim Str As String
+        Dim StartAddress As String
+        Dim Size As Integer
     End Structure
 
     Dim file_byte() As Byte
@@ -67,9 +74,10 @@ Public Class CCompdocFile
     Public arr_MSAT() As Integer              '主分区表数组，指向的是存储分区表的SID
     Dim arr_SAT() As Integer               '分区表数组，指向的是下一个SID
     Dim arr_SSAT() As Integer              '短分区表数据
-    Dim arr_dir() As CFDir              '目录
+    Dim arr_dir() As CFDir, arr_dir_address() As Integer             '目录
     Public cf_header As CFHeader '文件头
     Public arr_Module() As ModuleAddress  '模块的信息
+    Public arr_Workspace() As Workspace
 #End Region
 
     Private my_path As String
@@ -205,10 +213,12 @@ Public Class CCompdocFile
         k = 0
         Do
             ReDim Preserve arr_dir(k)
+            ReDim Preserve arr_dir_address(k)
             RedimDir(arr_dir(k))
 
             '首先是找到SID的地址，然后1个sector存放4个dir，1个偏移DIR_SIZE
-            arr_dir(k) = Marshal.PtrToStructure(FileAddress + CFHEADER_SIZE + CFHEADER_SIZE * l_SID + DIR_SIZE * (k Mod 4), arr_dir(k).GetType)
+            arr_dir_address(k) = CFHEADER_SIZE + CFHEADER_SIZE * l_SID + DIR_SIZE * (k Mod 4)
+            arr_dir(k) = Marshal.PtrToStructure(FileAddress + arr_dir_address(k), arr_dir(k).GetType)
 
             k = k + 1
             If k Mod 4 = 0 Then
@@ -383,38 +393,40 @@ Public Class CCompdocFile
 
             End If
         End With
+        '清除后面无效的部分 ，流的字节长度是固定为stream_len的
+        ReDim Preserve arr_result(stream_len - 1)
 
         Return n_size - 1
     End Function
 
-    Function Workspace(arr() As String)
-        '    Dim str_PROJECT As String
-        '    Dim if_short As Boolean
-        '    Dim str_workspace As String
-        '    Dim re As Object
-        '    Dim match_coll As Object
-        '    Dim i As Integer
-        '    Dim arr_address() As Integer
+    Function GetWorkspace(str_PROJECT As String, k_module As Integer)
+        Dim str_workspace As String
+        Dim arr_tmp() As String
+        Dim dic As Hashtable = New Hashtable
+        Dim l_double_byte As Integer
+        Dim str_tmp As String = ""
 
-        '    str_PROJECT = Me.read_stream("PROJECT", arr_address, if_short)
-        '    str_workspace = VBA.Split(str_PROJECT, "[Workspace]")(1)
+        str_workspace = Split(str_PROJECT, "[Workspace]")(1)
+        arr_tmp = Split(str_workspace, Chr(&HD) & Chr(&HA))
 
-        'Set re = CreateObject("VBScript.RegExp") 'Microsoft VBScript Tegular Expressions 5.5
-        'With re
-        '        .Global = True                  '搜索全部字符，false搜索到第1个即停止
-        '        .MultiLine = False              '是否多行
-        '        .IgnoreCase = False             '区分大小写
-        '        .Pattern = "\S*=\d{2,3},\S*"
-        '    Set match_coll = .Execute(str_workspace)            '返回MatchCollection对象
-        'End With
+        For i As Integer = 0 To k_module - 1
+            dic(Split(arr_Module(i).ModuleName, "=")(1)) = i
+        Next
 
-        '    ReDim arr(match_coll.Count - 1) As String
-        'For i = 0 To match_coll.Count - 1
-        '        arr(i) = match_coll(i).Value
-        '    Next i
+        'arr_tmp前面是个空，是[Workspace]的位置，最后也有个空白的位置
+        ReDim arr_Workspace(arr_tmp.Length - 3)
+        For i As Integer = 1 To arr_tmp.Length - 2
+            arr_Workspace(i - 1).Str = arr_tmp(i)
+            str_tmp = Split(str_PROJECT, arr_tmp(i)）(0)
+            l_double_byte = double_byte（str_tmp)  '前面一部分双字节字符的个数
+            arr_Workspace(i - 1).StartAddress = str_tmp.Length + l_double_byte
+            arr_Workspace(i - 1).Size = arr_tmp(i).Length + double_byte((i))
 
-        'Set re = Nothing
-        'Set match_coll = Nothing
+            Dim str_key As String = Split(arr_tmp(i), "=")(0)
+            If dic.ContainsKey(str_key) Then
+                arr_Module(dic(str_key)).WorkspaceIndex = i - 1
+            End If
+        Next
 
         Return 0
     End Function
@@ -463,14 +475,13 @@ Public Class CCompdocFile
             Return 0
         End If
 
-        ReDim arr_Module(match_coll.Count - 1) '0-名称，1-字节开始的地方，2-占用的字节个数，3到n实际每个字符的地址
-        l_double_byte = 0                       '双字节字符的个数
+        ReDim arr_Module(match_coll.Count - 1) '0-名称，1-字节开始的地方，2-占用的字节个数，3实际每个字符的地址
 
         For i = 0 To match_coll.Count - 1
+            l_double_byte = double_byte（Split(str_PROJECT, match_coll(i).Value）(0))  '模块前面一部分双字节字符的个数
             arr_Module(i).ModuleName = match_coll(i).Value     '名称
             arr_Module(i).StartAddress = match_coll(i).FirstIndex + l_double_byte '字节开始的地方，考虑双字节情况
             this_double_byte = double_byte(arr_Module(i).ModuleName)  '当前字符的双字节字符个数
-            l_double_byte = l_double_byte + this_double_byte
             arr_Module(i).Size = arr_Module(i).ModuleName.Length + this_double_byte  '占用的字节个数
 
             '隐藏模块的情况，包含了前后2个ODOA的位置
@@ -484,7 +495,7 @@ Public Class CCompdocFile
         Next i
         '修正地址，因为有可能是不连续的，理论上1个模块还可能可能跨越2个sector
         '直接计算到每一个字符的地址
-        Dim p_address As Integer                       '处在哪个档次的下标上
+        Dim p_address As Integer '处在哪个档次的下标上
         Dim byte_index As Integer
         For j = 0 To i - 1
             byte_index = arr_Module(j).StartAddress
@@ -494,6 +505,8 @@ Public Class CCompdocFile
                 arr_Module(j).ArrAddress(k) = arr_address(p_address, 1) + ((byte_index + k) Mod step_address)
             Next k
         Next j
+
+        GetWorkspace(str_PROJECT, i)
 
         re = Nothing
         match_coll = Nothing
@@ -549,35 +562,86 @@ Public Class CCompdocFile
         Return 0
     End Function
 
-    Function write_file_byte(arr() As Object, l_index As Integer, Optional str_un_hide As String = "")
-        '    Dim num_file As Integer
-        '    Dim i As Integer, k As Integer
-        '    Dim arr_un_hide() As Byte
-        '    Dim b_input As Byte
+    '改写PROJECT流，将其中要隐藏的模块的信息删除掉
+    Function ReWritePROJECT(ModuleName As String)
+        '首先读取模块
+        Dim k_module As Integer = Me.GetModule()
+        Dim arr_result() As Byte = Nothing
+        Dim stream_len As Integer = 0
+        Dim arr_address(,) As Integer = Nothing
+        Dim if_short As Integer = False
 
-        '    If VBA.Len(str_un_hide) > 0 Then
-        '        arr_un_hide = VBA.StrConv(str_un_hide, vbFromUnicode)
-        '    End If
+        If k_module > 0 Then
+            For i As Integer = 0 To k_module - 1
+                If ModuleName = arr_Module(i).ModuleName Then
 
-        '    num_file = FreeFile()
-        '    Open Me.path For Binary Access Write As #num_file
+                    Dim n_size As Integer = Me.GetStream("PROJECT", arr_result, stream_len, arr_address, if_short)
+                    '从arr_Module(i).StartAddress开始，跳过arr_Module(i).Size
+                    Dim str_PROJECT As String = System.Text.Encoding.Default.GetString(arr_result)
 
-        'k = 3
-        '    Do Until arr(l_index, k) = 0
-        '        If VBA.Len(str_un_hide) > 0 Then
-        '            If k - 3 > UBound(arr_un_hide) Then Exit Do
-        '            b_input = arr_un_hide(k - 3)
-        '        ElseIf k Mod 2 = 1 Then
-        '            b_input = VBA.CByte(&HD)
-        '        Else
-        '            b_input = VBA.CByte(&HA)
-        '        End If
+                    str_PROJECT = Replace(str_PROJECT, ModuleName & Chr(&HD) & Chr(&HA), "")
+                    str_PROJECT = Replace(str_PROJECT, arr_Workspace(arr_Module(i).WorkspaceIndex).Str & Chr(&HD) & Chr(&HA), "")
 
-        '        Put #num_file, arr(l_index, k) + 1, b_input
+                    'Dim i_len As Integer = arr_result.Length
+                    Dim arr_byte_to_write() As Byte = System.Text.Encoding.Default.GetBytes(str_PROJECT)
+                    'Dim i_start As Integer = arr_byte_to_write.Length
+                    'ReDim Preserve arr_byte_to_write(i_len - 1)
+                    'Dim tmp_byte_into As Byte = CByte(&HD)
 
-        '    k = k + 1
-        '    Loop
-        '    Close num_file
+                    'For j As Integer = i_start To i_len - 1
+                    '    arr_byte_to_write(j) = tmp_byte_into
+                    '    If tmp_byte_into = CByte(&HD) Then
+                    '        tmp_byte_into = CByte(&HA)
+                    '    Else
+                    '        tmp_byte_into = CByte(&HD)
+                    '    End If
+                    'Next
+
+                    Dim step_address As Integer = 0
+                    If if_short Then
+                        step_address = 64
+                    Else
+                        step_address = 512
+                    End If
+
+                    Dim tmp_byte(step_address - 1) As Byte
+                    Dim p1 As IntPtr = GCHandle.Alloc(arr_byte_to_write, GCHandleType.Pinned).AddrOfPinnedObject()
+                    Dim p2 As IntPtr = GCHandle.Alloc(tmp_byte, GCHandleType.Pinned).AddrOfPinnedObject()
+
+                    Dim fw As FileStream = New FileStream(Me.path, FileMode.Open)
+                    For i_address As Integer = 0 To n_size
+                        CopyMemory(p2, p1 + i_address * step_address, step_address)
+                        CopyMemory(FileAddress + arr_address(i_address, 1), p1 + i_address * step_address, step_address)
+                        fw.Seek(arr_address(i_address, 1), origin:=0)
+                        fw.Write(tmp_byte, 0, tmp_byte.Length)
+                    Next
+
+
+                    '重设PROJECT目录的长度
+                    For j As Integer = 0 To arr_dir.Length - 1
+                        Dim Str As String = System.Text.Encoding.Unicode.GetString(arr_dir(j).dir_name)
+                        If Split(Str, vbNullChar)(0) = "PROJECT" Then
+                            arr_dir(j).stream_size = arr_byte_to_write.Length
+                            Dim tmp_i As Integer = arr_byte_to_write.Length
+                            Dim tmp_i_to_byte(3) As Byte
+                            p1 = GCHandle.Alloc(tmp_i, GCHandleType.Pinned).AddrOfPinnedObject()
+                            p2 = GCHandle.Alloc(tmp_i_to_byte, GCHandleType.Pinned).AddrOfPinnedObject()
+                            CopyMemory(p2, p1, 4)
+
+                            CopyMemory(arr_dir_address（j) + DIR_SIZE - 4 + FileAddress, p1, 4）
+
+                            fw.Seek(arr_dir_address（j) + DIR_SIZE - 4 * 2, origin:=0) '128dir的长度，stream_size是倒数第2个  
+                            fw.Write(tmp_i_to_byte, 0, tmp_i_to_byte.Length)
+                            Exit For
+                        End If
+                    Next
+
+                    fw.Close()
+                    Return 1
+                    Exit For
+                End If
+            Next
+        End If
 
         Return 0
     End Function
