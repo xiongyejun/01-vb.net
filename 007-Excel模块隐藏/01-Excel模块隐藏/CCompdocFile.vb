@@ -563,87 +563,93 @@ Public Class CCompdocFile
     End Function
 
     '改写PROJECT流，将其中要隐藏的模块的信息删除掉
-    Function ReWritePROJECT(ModuleName As String)
+    Function ReWritePROJECT(ModuleName As String, Optional UnHide As Boolean = False)
         '首先读取模块
         Dim k_module As Integer = Me.GetModule()
         Dim arr_result() As Byte = Nothing
         Dim stream_len As Integer = 0
         Dim arr_address(,) As Integer = Nothing
         Dim if_short As Integer = False
+        Dim arr_byte_to_write() As Byte = Nothing
 
-        If k_module > 0 Then
-            For i As Integer = 0 To k_module - 1
-                If ModuleName = arr_Module(i).ModuleName Then
+        Dim n_size As Integer = Me.GetStream("PROJECT", arr_result, stream_len, arr_address, if_short)
+        Dim str_PROJECT As String = System.Text.Encoding.Default.GetString(arr_result)
 
-                    Dim n_size As Integer = Me.GetStream("PROJECT", arr_result, stream_len, arr_address, if_short)
-                    '从arr_Module(i).StartAddress开始，跳过arr_Module(i).Size
-                    Dim str_PROJECT As String = System.Text.Encoding.Default.GetString(arr_result)
+        If UnHide Then
+            str_PROJECT = Replace(str_PROJECT, "Package={", "Module=" & ModuleName & Chr(&HD) & Chr(&HA) & "Package={")
+            'str_PROJECT = str_PROJECT & ModuleName & "=100, 100, 100, 100, " & Chr(&HD) & Chr(&HA)
+            arr_byte_to_write = System.Text.Encoding.Default.GetBytes(str_PROJECT)
+        Else
+            If k_module > 0 Then
+                For i As Integer = 0 To k_module - 1
+                    If ModuleName = arr_Module(i).ModuleName Then
+                        str_PROJECT = Replace(str_PROJECT, ModuleName & Chr(&HD) & Chr(&HA), "")
+                        str_PROJECT = Replace(str_PROJECT, arr_Workspace(arr_Module(i).WorkspaceIndex).Str & Chr(&HD) & Chr(&HA), "")
 
-                    str_PROJECT = Replace(str_PROJECT, ModuleName & Chr(&HD) & Chr(&HA), "")
-                    str_PROJECT = Replace(str_PROJECT, arr_Workspace(arr_Module(i).WorkspaceIndex).Str & Chr(&HD) & Chr(&HA), "")
+                        'Dim i_len As Integer = arr_result.Length
+                        arr_byte_to_write = System.Text.Encoding.Default.GetBytes(str_PROJECT)
+                        'Dim i_start As Integer = arr_byte_to_write.Length
+                        'ReDim Preserve arr_byte_to_write(i_len - 1)
+                        'Dim tmp_byte_into As Byte = CByte(&HD)
 
-                    'Dim i_len As Integer = arr_result.Length
-                    Dim arr_byte_to_write() As Byte = System.Text.Encoding.Default.GetBytes(str_PROJECT)
-                    'Dim i_start As Integer = arr_byte_to_write.Length
-                    'ReDim Preserve arr_byte_to_write(i_len - 1)
-                    'Dim tmp_byte_into As Byte = CByte(&HD)
+                        'For j As Integer = i_start To i_len - 1
+                        '    arr_byte_to_write(j) = tmp_byte_into
+                        '    If tmp_byte_into = CByte(&HD) Then
+                        '        tmp_byte_into = CByte(&HA)
+                        '    Else
+                        '        tmp_byte_into = CByte(&HD)
+                        '    End If
+                        'Next
 
-                    'For j As Integer = i_start To i_len - 1
-                    '    arr_byte_to_write(j) = tmp_byte_into
-                    '    If tmp_byte_into = CByte(&HD) Then
-                    '        tmp_byte_into = CByte(&HA)
-                    '    Else
-                    '        tmp_byte_into = CByte(&HD)
-                    '    End If
-                    'Next
-
-                    Dim step_address As Integer = 0
-                    If if_short Then
-                        step_address = 64
-                    Else
-                        step_address = 512
+                        Exit For
                     End If
-
-                    Dim tmp_byte(step_address - 1) As Byte
-                    Dim p1 As IntPtr = GCHandle.Alloc(arr_byte_to_write, GCHandleType.Pinned).AddrOfPinnedObject()
-                    Dim p2 As IntPtr = GCHandle.Alloc(tmp_byte, GCHandleType.Pinned).AddrOfPinnedObject()
-
-                    Dim fw As FileStream = New FileStream(Me.path, FileMode.Open)
-                    For i_address As Integer = 0 To n_size
-                        CopyMemory(p2, p1 + i_address * step_address, step_address)
-                        CopyMemory(FileAddress + arr_address(i_address, 1), p1 + i_address * step_address, step_address)
-                        fw.Seek(arr_address(i_address, 1), origin:=0)
-                        fw.Write(tmp_byte, 0, tmp_byte.Length)
-                    Next
-
-
-                    '重设PROJECT目录的长度
-                    For j As Integer = 0 To arr_dir.Length - 1
-                        Dim Str As String = System.Text.Encoding.Unicode.GetString(arr_dir(j).dir_name)
-                        If Split(Str, vbNullChar)(0) = "PROJECT" Then
-                            arr_dir(j).stream_size = arr_byte_to_write.Length
-                            Dim tmp_i As Integer = arr_byte_to_write.Length
-                            Dim tmp_i_to_byte(3) As Byte
-                            p1 = GCHandle.Alloc(tmp_i, GCHandleType.Pinned).AddrOfPinnedObject()
-                            p2 = GCHandle.Alloc(tmp_i_to_byte, GCHandleType.Pinned).AddrOfPinnedObject()
-                            CopyMemory(p2, p1, 4)
-
-                            CopyMemory(arr_dir_address（j) + DIR_SIZE - 4 + FileAddress, p1, 4）
-
-                            fw.Seek(arr_dir_address（j) + DIR_SIZE - 4 * 2, origin:=0) '128dir的长度，stream_size是倒数第2个  
-                            fw.Write(tmp_i_to_byte, 0, tmp_i_to_byte.Length)
-                            Exit For
-                        End If
-                    Next
-
-                    fw.Close()
-                    Return 1
-                    Exit For
-                End If
-            Next
+                Next
+            Else
+                Return 0
+            End If
         End If
 
-        Return 0
+        Dim step_address As Integer = 0
+        If if_short Then
+            step_address = 64
+        Else
+            step_address = 512
+        End If
+
+        Dim tmp_byte(step_address - 1) As Byte
+        Dim p1 As IntPtr = GCHandle.Alloc(arr_byte_to_write, GCHandleType.Pinned).AddrOfPinnedObject()
+        Dim p2 As IntPtr = GCHandle.Alloc(tmp_byte, GCHandleType.Pinned).AddrOfPinnedObject()
+
+        Dim fw As FileStream = New FileStream(Me.path, FileMode.Open)
+        'If arr_byte_to_write.Length \ step_address > n_size Then n_size = arr_byte_to_write.Length \ step_address
+        For i_address As Integer = 0 To n_size
+            CopyMemory(p2, p1 + i_address * step_address, step_address)
+            CopyMemory(FileAddress + arr_address(i_address, 1), p1 + i_address * step_address, step_address)
+            fw.Seek(arr_address(i_address, 1), origin:=0)
+            fw.Write(tmp_byte, 0, tmp_byte.Length)
+        Next
+
+        '重设PROJECT目录的长度
+        For j As Integer = 0 To arr_dir.Length - 1
+            Dim Str As String = System.Text.Encoding.Unicode.GetString(arr_dir(j).dir_name)
+            If Split(Str, vbNullChar)(0) = "PROJECT" Then
+                arr_dir(j).stream_size = arr_byte_to_write.Length
+                Dim tmp_i As Integer = arr_byte_to_write.Length
+                Dim tmp_i_to_byte(3) As Byte
+                p1 = GCHandle.Alloc(tmp_i, GCHandleType.Pinned).AddrOfPinnedObject()
+                p2 = GCHandle.Alloc(tmp_i_to_byte, GCHandleType.Pinned).AddrOfPinnedObject()
+                CopyMemory(p2, p1, 4)
+
+                CopyMemory(arr_dir_address（j) + DIR_SIZE - 4 + FileAddress, p1, 4）
+
+                fw.Seek(arr_dir_address（j) + DIR_SIZE - 4 * 2, origin:=0) '128dir的长度，stream_size是倒数第2个  
+                fw.Write(tmp_i_to_byte, 0, tmp_i_to_byte.Length)
+                Exit For
+            End If
+        Next
+
+        fw.Close()
+        Return 1
     End Function
 
     Private Function GetFileByte() As Integer

@@ -8,6 +8,7 @@
     Friend WithEvents tsm_HideModule As System.Windows.Forms.ToolStripMenuItem
     Friend WithEvents tsm_UnHideModule As System.Windows.Forms.ToolStripMenuItem
     Friend WithEvents tsm_ReWritePROJECT As System.Windows.Forms.ToolStripMenuItem
+    Friend WithEvents tsm_ReWritePROJECT_UnHide As System.Windows.Forms.ToolStripMenuItem
 
     Private WithEvents lv_hex As System.Windows.Forms.ListView
     Private WithEvents tree_dir As System.Windows.Forms.TreeView
@@ -37,13 +38,14 @@
         Me.tsm_HideModule = New System.Windows.Forms.ToolStripMenuItem()
         Me.tsm_UnHideModule = New System.Windows.Forms.ToolStripMenuItem()
         Me.tsm_ReWritePROJECT = New System.Windows.Forms.ToolStripMenuItem()
+        Me.tsm_ReWritePROJECT_UnHide = New System.Windows.Forms.ToolStripMenuItem()
         '
         'MenuStrip1
         Me.MenuStrip1.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.菜单ToolStripMenuItem})
         Me.MenuStrip1.Text = "MenuStrip1"
         '
         '菜单ToolStripMenuItem
-        Me.菜单ToolStripMenuItem.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.选择文件ToolStripMenuItem, Me.tsm_VBA, Me.tsm_HideModule, Me.tsm_UnHideModule, Me.tsm_ReWritePROJECT})
+        Me.菜单ToolStripMenuItem.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.选择文件ToolStripMenuItem, Me.tsm_VBA, Me.tsm_HideModule, Me.tsm_UnHideModule, Me.tsm_ReWritePROJECT, tsm_ReWritePROJECT_UnHide})
         Me.菜单ToolStripMenuItem.Text = "菜单"
         Me.菜单ToolStripMenuItem.Image = System.Drawing.SystemIcons.Information.ToBitmap
         '
@@ -62,6 +64,9 @@
 
         Me.tsm_ReWritePROJECT.Text = "隐藏ReWritePROJECT"        '
         Me.tsm_ReWritePROJECT.Image = System.Drawing.SystemIcons.Error.ToBitmap
+
+        Me.tsm_ReWritePROJECT_UnHide.Text = "取消隐藏ReWritePROJECT"        '
+        Me.tsm_ReWritePROJECT_UnHide.Image = System.Drawing.SystemIcons.Question.ToBitmap
 
         lb_tishi = New Label
         With lb_tishi
@@ -504,6 +509,14 @@
             End If
         Next
     End Sub
+
+    Private Sub tsm_ReWritePROJECT_UnHide_Click(sender As Object, e As EventArgs) Handles tsm_ReWritePROJECT_UnHide.Click
+        Dim module_name As String = InputBox("输入模块的名称")
+        If module_name = "" Then Exit Sub
+        cls_cf.ReWritePROJECT(module_name, True)
+        tsm_VBA_Click(sender, e)
+    End Sub
+
     Private Sub tsm_UnHideModule_Click(sender As Object, e As EventArgs) Handles tsm_UnHideModule.Click
         Dim ct_text As String
         Dim index_module As Integer = 0
@@ -523,6 +536,8 @@
 
 
     End Sub
+
+
 
 #End Region
 
