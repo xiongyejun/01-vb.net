@@ -17,6 +17,7 @@
 
     Private gb_vba As System.Windows.Forms.GroupBox
     Private gb_workspace As System.Windows.Forms.GroupBox
+    Private gb_vba_dir As System.Windows.Forms.GroupBox
     Private lb_tishi As System.Windows.Forms.Label
 
     Dim cls_cf As CCompdocFile
@@ -105,6 +106,9 @@
         gb_workspace = New GroupBox
         gb_workspace.Text = "Workspace"
 
+        gb_vba_dir = New GroupBox
+        gb_vba_dir.Text = "vba_dir"
+
         Me.Width = tree_dir.Width + lv_hex.Width + 50
         Me.Height = i_HEIGHT + 100
 
@@ -117,6 +121,7 @@
         Me.Controls.Add(tree_dir)
         Me.Controls.Add(lv_hex)
         Me.Controls.Add(gb_vba)
+        Me.Controls.Add(gb_vba_dir)
         Me.Controls.Add(gb_workspace)
         Me.Controls.Add(lb_tishi)
 
@@ -455,10 +460,12 @@
 
     Private Sub tsm_VBA_Click(sender As Object, e As EventArgs) Handles tsm_VBA.Click
         Dim i_top As Integer = Me.tree_dir.Height + Me.tree_dir.Top
-        gb_vba.Top = i_top + 15 : gb_workspace.Top = gb_vba.Top
+        gb_vba.Top = i_top + 15 : gb_workspace.Top = gb_vba.Top : gb_vba_dir.Top = gb_vba.Top
         gb_vba.Left = 5
-        Me.gb_vba.Width = 300 : gb_workspace.Left = Me.gb_vba.Width + Me.gb_vba.Left
-        gb_workspace.Width = Me.gb_vba.Width
+        Me.gb_vba.Width = 300 : gb_workspace.Left = Me.gb_vba.Width + Me.gb_vba.Left + 5
+        gb_workspace.Width = Me.gb_vba.Width : gb_vba_dir.Left = gb_workspace.Left + gb_workspace.Width + 5
+        gb_vba_dir.Width = Me.gb_vba.Width
+
 
         Dim k_module As Integer = cls_cf.GetModule()
         If k_module > 0 Then
@@ -487,7 +494,25 @@
                 i_top = i_top + cb.Height + 5
             Next
             gb_workspace.Height = i_top + 10
+
+            'VBA DIR下的目录
+            i_top = 15
+            For i = 0 To cls_cf.arr_VBA.Length - 1
+                Dim str As String = cls_cf.arr_VBA(i)
+                If Not str Like "__SRP_*" Then
+                    Dim TB As System.Windows.Forms.TextBox = New TextBox
+                    TB.Text = cls_cf.arr_VBA(i)
+                    TB.Width = gb_vba_dir.Width - 10
+                    TB.Top = i_top
+                    gb_vba_dir.Controls.Add(TB)
+
+                    i_top = i_top + TB.Height + 5
+                End If
+            Next
+            gb_vba_dir.Height = i_top + 10
         End If
+
+
     End Sub
 
     Private Sub tsm_HideModule_Click(sender As Object, e As EventArgs) Handles tsm_HideModule.Click
@@ -514,7 +539,7 @@
         Dim module_name As String = InputBox("输入模块的名称")
         If module_name = "" Then Exit Sub
         cls_cf.ReWritePROJECT(module_name, True)
-        tsm_VBA_Click(sender, e)
+        'tsm_VBA_Click(sender, e)
     End Sub
 
     Private Sub tsm_UnHideModule_Click(sender As Object, e As EventArgs) Handles tsm_UnHideModule.Click

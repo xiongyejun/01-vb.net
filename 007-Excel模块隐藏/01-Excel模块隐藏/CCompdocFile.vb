@@ -75,6 +75,7 @@ Public Class CCompdocFile
     Dim arr_SAT() As Integer               '分区表数组，指向的是下一个SID
     Dim arr_SSAT() As Integer              '短分区表数据
     Dim arr_dir() As CFDir, arr_dir_address() As Integer             '目录
+    Public arr_VBA() As String  '获取目录VBA下的东西
     Public cf_header As CFHeader '文件头
     Public arr_Module() As ModuleAddress  '模块的信息
     Public arr_Workspace() As Workspace
@@ -207,6 +208,7 @@ Public Class CCompdocFile
         Dim l_SID As Integer
         Dim k As Integer
         Dim d As Date = #2017-1-1#
+        Dim vba_index As Integer = 0
 
         l_SID = cf_header.dir_first_SID
 
@@ -220,14 +222,31 @@ Public Class CCompdocFile
             arr_dir_address(k) = CFHEADER_SIZE + CFHEADER_SIZE * l_SID + DIR_SIZE * (k Mod 4)
             arr_dir(k) = Marshal.PtrToStructure(FileAddress + arr_dir_address(k), arr_dir(k).GetType)
 
+            If System.Text.Encoding.Unicode.GetString(arr_dir(k).dir_name) Like "VBA*" Then vba_index = k
             k = k + 1
             If k Mod 4 = 0 Then
                 l_SID = arr_SAT(l_SID)
             End If
         Loop Until l_SID = -2
 
+        k = 0
+        GetVbaChild(k, arr_dir(vba_index).sub_dir)
+
         Return 0
     End Function
+
+    Private Function GetVbaChild(ByRef k As Integer, ByVal i_index As Integer)
+        If i_index = -1 Then Return 0
+
+        ReDim Preserve arr_VBA(k)
+        arr_VBA(k) = System.Text.Encoding.Unicode.GetString(arr_dir(i_index).dir_name)
+        k += 1
+        GetVbaChild(k, arr_dir(i_index).left_child)
+        GetVbaChild(k, arr_dir(i_index).right_child)
+
+        Return 0
+    End Function
+
 
     Private Function RedimDir(ByRef d As CFDir)
         ReDim d.dir_name(63)
