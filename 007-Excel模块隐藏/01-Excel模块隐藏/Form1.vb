@@ -9,6 +9,7 @@
     Friend WithEvents tsm_UnHideModule As System.Windows.Forms.ToolStripMenuItem
     Friend WithEvents tsm_ReWritePROJECT As System.Windows.Forms.ToolStripMenuItem
     Friend WithEvents tsm_ReWritePROJECT_UnHide As System.Windows.Forms.ToolStripMenuItem
+    Friend WithEvents tsm_UnProtectProject As System.Windows.Forms.ToolStripMenuItem
 
     Private WithEvents lv_hex As System.Windows.Forms.ListView
     Private WithEvents tree_dir As System.Windows.Forms.TreeView
@@ -40,13 +41,14 @@
         Me.tsm_UnHideModule = New System.Windows.Forms.ToolStripMenuItem()
         Me.tsm_ReWritePROJECT = New System.Windows.Forms.ToolStripMenuItem()
         Me.tsm_ReWritePROJECT_UnHide = New System.Windows.Forms.ToolStripMenuItem()
+        Me.tsm_UnProtectProject = New System.Windows.Forms.ToolStripMenuItem()
         '
         'MenuStrip1
         Me.MenuStrip1.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.菜单ToolStripMenuItem})
         Me.MenuStrip1.Text = "MenuStrip1"
         '
         '菜单ToolStripMenuItem
-        Me.菜单ToolStripMenuItem.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.选择文件ToolStripMenuItem, Me.tsm_VBA, Me.tsm_HideModule, Me.tsm_UnHideModule, Me.tsm_ReWritePROJECT, tsm_ReWritePROJECT_UnHide})
+        Me.菜单ToolStripMenuItem.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.选择文件ToolStripMenuItem, Me.tsm_VBA, Me.tsm_HideModule, Me.tsm_UnHideModule, Me.tsm_ReWritePROJECT, tsm_ReWritePROJECT_UnHide, tsm_UnProtectProject})
         Me.菜单ToolStripMenuItem.Text = "菜单"
         Me.菜单ToolStripMenuItem.Image = System.Drawing.SystemIcons.Information.ToBitmap
         '
@@ -68,6 +70,9 @@
 
         Me.tsm_ReWritePROJECT_UnHide.Text = "取消隐藏ReWritePROJECT"        '
         Me.tsm_ReWritePROJECT_UnHide.Image = System.Drawing.SystemIcons.Question.ToBitmap
+
+        Me.tsm_UnProtectProject.Text = "VBA工程密码破解"        '
+        Me.tsm_UnProtectProject.Image = System.Drawing.SystemIcons.Question.ToBitmap
 
         lb_tishi = New Label
         With lb_tishi
@@ -218,6 +223,8 @@
         Dim arr_font() As Integer = Nothing '如果是不连续的地址，标红
         Dim k_font As Integer = 0
         Dim pre_address As Integer = 0  '记录上一个地址
+
+        If Not CheckCls() Then Exit Function
 
         Dim i_row As Integer = cls_cf.GetStream(dir_name, arr_byte, stream_len, arr_address, if_short)
 
@@ -455,17 +462,18 @@
         Me.Text = file_name
 
         cls_cf = New CCompdocFile(file_name)
-        TreeNode()
+        If CheckCls() Then TreeNode()
     End Sub
 
     Private Sub tsm_VBA_Click(sender As Object, e As EventArgs) Handles tsm_VBA.Click
+        If Not CheckCls() Then Exit Sub
+
         Dim i_top As Integer = Me.tree_dir.Height + Me.tree_dir.Top
         gb_vba.Top = i_top + 15 : gb_workspace.Top = gb_vba.Top : gb_vba_dir.Top = gb_vba.Top
         gb_vba.Left = 5
         Me.gb_vba.Width = 300 : gb_workspace.Left = Me.gb_vba.Width + Me.gb_vba.Left + 5
         gb_workspace.Width = Me.gb_vba.Width : gb_vba_dir.Left = gb_workspace.Left + gb_workspace.Width + 5
         gb_vba_dir.Width = Me.gb_vba.Width
-
 
         Dim k_module As Integer = cls_cf.GetModule()
         If k_module > 0 Then
@@ -516,6 +524,8 @@
     End Sub
 
     Private Sub tsm_HideModule_Click(sender As Object, e As EventArgs) Handles tsm_HideModule.Click
+        If Not CheckCls() Then Exit Sub
+
         For Each ct As Control In Me.gb_vba.Controls
             If CType(ct, CheckBox).Checked Then
                 If 1 = cls_cf.HideModule(CType(ct, CheckBox).Text) Then
@@ -526,6 +536,8 @@
     End Sub
 
     Private Sub tsm_ReWritePROJECT_Click(sender As Object, e As EventArgs) Handles tsm_ReWritePROJECT.Click
+        If Not CheckCls() Then Exit Sub
+
         For Each ct As Control In Me.gb_vba.Controls
             If CType(ct, CheckBox).Checked Then
                 If 1 = cls_cf.ReWritePROJECT(CType(ct, CheckBox).Text) Then
@@ -536,6 +548,8 @@
     End Sub
 
     Private Sub tsm_ReWritePROJECT_UnHide_Click(sender As Object, e As EventArgs) Handles tsm_ReWritePROJECT_UnHide.Click
+        If Not CheckCls() Then Exit Sub
+
         Dim module_name As String = InputBox("输入模块的名称")
         If module_name = "" Then Exit Sub
         cls_cf.ReWritePROJECT(module_name, True)
@@ -545,6 +559,8 @@
     Private Sub tsm_UnHideModule_Click(sender As Object, e As EventArgs) Handles tsm_UnHideModule.Click
         Dim ct_text As String
         Dim index_module As Integer = 0
+
+        If Not CheckCls() Then Exit Sub
 
         For Each ct As Control In Me.gb_vba.Controls
             If CType(ct, CheckBox).Checked Then
@@ -562,8 +578,19 @@
 
     End Sub
 
-
+    Private Sub tsm_UnProtectProject_Click(sender As Object, e As EventArgs) Handles tsm_UnProtectProject.Click
+        If Not CheckCls() Then Exit Sub
+        cls_cf.ReWritePROJECT("xx", False, True)
+    End Sub
 
 #End Region
 
+    Function CheckCls()
+        If cls_cf Is Nothing Then
+            Return False
+        Else
+            Return cls_cf.ready
+        End If
+
+    End Function
 End Class

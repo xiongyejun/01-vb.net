@@ -107,7 +107,7 @@ Public Class CCompdocFile
         ReDim cf_header.arr_SID(108)
 
         Me.path = file_name
-
+        b_ready = False
         If Me.path <> "" Then
             If GetFileByte() = 1 Then
                 b_ready = True
@@ -582,7 +582,7 @@ Public Class CCompdocFile
     End Function
 
     '改写PROJECT流，将其中要隐藏的模块的信息删除掉
-    Function ReWritePROJECT(ModuleName As String, Optional UnHide As Boolean = False)
+    Function ReWritePROJECT(ModuleName As String, Optional UnHide As Boolean = False, Optional UnProtectProject As Boolean = False)
         '首先读取模块
         Dim k_module As Integer = Me.GetModule()
         Dim arr_result() As Byte = Nothing
@@ -597,6 +597,26 @@ Public Class CCompdocFile
         If UnHide Then
             str_PROJECT = Replace(str_PROJECT, "Package={", "Module=" & ModuleName & Chr(&HD) & Chr(&HA) & "Package={")
             'str_PROJECT = str_PROJECT & ModuleName & "=100, 100, 100, 100, " & Chr(&HD) & Chr(&HA)
+            arr_byte_to_write = System.Text.Encoding.Default.GetBytes(str_PROJECT)
+        ElseIf UnProtectProject Then
+            '0D0ACMG='DPB'GC
+            Dim arr_find() As String = New String() {"CMG", "DPB", "GC"}
+            For i As Integer = 0 To 2
+                Dim str_find As String = Chr(&HD) & Chr(&HA) & arr_find(i) & "="
+                Dim i_start As Integer = InStr(str_PROJECT, str_find)
+                Dim i_end As Integer = InStr(i_start + 5, str_PROJECT, Chr(&HD) & Chr(&HA))
+                Dim str_replace As String = str_PROJECT.Substring(i_start, i_end - i_start)
+
+                Dim str_tmp As String = Chr(&HD)
+                For j As Integer = i_start To i_end
+                    Mid(str_PROJECT, j, 1) = str_tmp
+                    If str_tmp = Chr(&HA) Then
+                        str_tmp = Chr(&HD)
+                    Else
+                        str_tmp = Chr(&HA)
+                    End If
+                Next
+            Next
             arr_byte_to_write = System.Text.Encoding.Default.GetBytes(str_PROJECT)
         Else
             If k_module > 0 Then
@@ -673,8 +693,20 @@ Public Class CCompdocFile
 
     Private Function GetFileByte() As Integer
         MFunc.read_file_to_byte(Me.path, file_byte)
+        If Not IsCompdocFile() Then Return 0
         FileAddress = GCHandle.Alloc(file_byte, GCHandleType.Pinned).AddrOfPinnedObject()
         Return 1
+    End Function
+
+    Private Function IsCompdocFile() As Boolean
+        Dim head_byte() As Byte = {&HD0, &HCF, &H11, &HE0, &HA1, &HB1， &H1A, &HE1}
+        For i As Integer = 0 To head_byte.Length - 1
+            If head_byte(i) <> file_byte(i) Then
+                MsgBox("选择的不是复合文档。")
+                Return False
+            End If
+        Next
+        Return True
     End Function
 
     Protected Overrides Sub Finalize()
