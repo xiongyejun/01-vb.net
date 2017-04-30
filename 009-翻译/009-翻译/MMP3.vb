@@ -10,7 +10,7 @@
         PlayMidiFile = mciSendStringA("play music", "", 0, 0) = 0
     End Function
 
-    Private Function StopMidi() As Boolean
+    Function StopMidi() As Boolean
         StopMidi = mciSendStringA("stop music", "", 0, 0) = 0
         mciSendStringA("close music", "", 0, 0)
     End Function
