@@ -57,3 +57,5 @@
 *.xls
 *.AssemblyInfo.vb
 *.Designer.vb
+*AssemblyInfo.vb
+*MP3
