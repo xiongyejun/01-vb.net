@@ -18,7 +18,7 @@
 
     Private gb_vba As System.Windows.Forms.GroupBox
     Private gb_workspace As System.Windows.Forms.GroupBox
-    Private gb_vba_dir As System.Windows.Forms.GroupBox
+    Private gb_vba_dir As System.Windows.Forms.Panel
     Private lb_tishi As System.Windows.Forms.Label
 
     Dim cls_cf As CCompdocFile
@@ -111,7 +111,7 @@
         gb_workspace = New GroupBox
         gb_workspace.Text = "Workspace"
 
-        gb_vba_dir = New GroupBox
+        gb_vba_dir = New Panel
         gb_vba_dir.Text = "vba_dir"
 
         Me.Width = tree_dir.Width + lv_hex.Width + 50
@@ -476,9 +476,10 @@
         gb_vba_dir.Width = Me.gb_vba.Width
 
         Dim k_module As Integer = cls_cf.GetModule()
-        If k_module > 0 Then
-            Me.gb_vba.Controls.Clear()
+        Me.gb_vba.Controls.Clear()
+        gb_workspace.Controls.Clear()
 
+        If k_module > 0 Then
             i_top = 15
             For i = 0 To k_module - 1
                 Dim cb As System.Windows.Forms.CheckBox = New CheckBox
@@ -503,23 +504,32 @@
             Next
             gb_workspace.Height = i_top + 10
 
-            'VBA DIR下的目录
-            i_top = 15
-            For i = 0 To cls_cf.arr_VBA.Length - 1
-                Dim str As String = cls_cf.arr_VBA(i)
-                If Not str Like "__SRP_*" Then
-                    Dim TB As System.Windows.Forms.TextBox = New TextBox
-                    TB.Text = cls_cf.arr_VBA(i)
-                    TB.Width = gb_vba_dir.Width - 10
-                    TB.Top = i_top
-                    gb_vba_dir.Controls.Add(TB)
 
-                    i_top = i_top + TB.Height + 5
-                End If
-            Next
-            gb_vba_dir.Height = i_top + 10
         End If
+        'VBA DIR下的目录
+        i_top = 15
+        gb_vba_dir.Controls.Clear()
 
+        For i = 0 To cls_cf.arr_VBA.Length - 1
+            Dim str As String = cls_cf.arr_VBA(i)
+            If Not str Like "__SRP_*" Then
+                Dim TB As System.Windows.Forms.TextBox = New TextBox
+                TB.Text = cls_cf.arr_VBA(i)
+                TB.Width = gb_vba_dir.Width - 20
+                TB.Top = i_top
+                gb_vba_dir.Controls.Add(TB)
+
+                i_top = i_top + TB.Height + 5
+            End If
+
+
+        Next
+        gb_vba_dir.Height = i_top + 10
+        If i_top > 150 Then
+            gb_vba_dir.Height = 150
+            gb_vba_dir.AutoScroll = True
+
+        End If
 
     End Sub
 
