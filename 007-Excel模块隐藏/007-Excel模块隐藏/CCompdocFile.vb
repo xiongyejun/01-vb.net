@@ -606,28 +606,33 @@ Public Class CCompdocFile
             End If
             'str_PROJECT = str_PROJECT & ModuleName & "=100, 100, 100, 100, " & Chr(&HD) & Chr(&HA)
             arr_byte_to_write = System.Text.Encoding.Default.GetBytes(str_PROJECT)
-            ElseIf UnProtectProject Then
-                '0D0ACMG='DPB'GC
-                Dim arr_find() As String = New String() {"CMG", "DPB", "GC"}
-                For i As Integer = 0 To 2
-                    Dim str_find As String = Chr(&HD) & Chr(&HA) & arr_find(i) & "="
-                    Dim i_start As Integer = InStr(str_PROJECT, str_find)
-                    Dim i_end As Integer = InStr(i_start + 5, str_PROJECT, Chr(&HD) & Chr(&HA))
-                    Dim str_replace As String = str_PROJECT.Substring(i_start, i_end - i_start)
 
-                    Dim str_tmp As String = Chr(&HD)
-                    For j As Integer = i_start To i_end
-                        Mid(str_PROJECT, j, 1) = str_tmp
-                        If str_tmp = Chr(&HA) Then
-                            str_tmp = Chr(&HD)
-                        Else
-                            str_tmp = Chr(&HA)
-                        End If
-                    Next
-                Next
-                arr_byte_to_write = System.Text.Encoding.Default.GetBytes(str_PROJECT)
-            Else
-                If k_module > 0 Then
+        ElseIf UnProtectProject Then
+            '0D0ACMG='DPB'GC
+            Dim arr_find() As String = New String() {"CMG", "DPB", "GC"}
+
+            For i As Integer = 0 To 2
+                Dim str_find As String = Chr(&HD) & Chr(&HA) & arr_find(i) & "="
+                Dim i_start As Integer = InStr(str_PROJECT, str_find)
+                Dim i_end As Integer = InStr(i_start + 5, str_PROJECT, Chr(&HD) & Chr(&HA))
+                Dim str_replace As String = str_PROJECT.Substring(i_start, i_end - i_start)
+
+                'Dim str_tmp As String = Chr(&HD)
+                'For j As Integer = i_start To i_end
+                '    Mid(str_PROJECT, j, 1) = str_tmp
+                '    If str_tmp = Chr(&HA) Then
+                '        str_tmp = Chr(&HD)
+                '    Else
+                '        str_tmp = Chr(&HA)
+                '    End If
+                'Next
+                str_PROJECT = Replace(str_PROJECT, str_replace, "")
+            Next
+            arr_byte_to_write = System.Text.Encoding.Default.GetBytes(str_PROJECT)
+
+        Else
+
+            If k_module > 0 Then
                 For i As Integer = 0 To k_module - 1
                     If ModuleName = arr_Module(i).ModuleName Then
                         str_PROJECT = Replace(str_PROJECT, ModuleName & Chr(&HD) & Chr(&HA), "")
