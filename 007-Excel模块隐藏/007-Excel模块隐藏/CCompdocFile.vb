@@ -79,6 +79,7 @@ Public Class CCompdocFile
     Public cf_header As CFHeader '文件头
     Public arr_Module() As ModuleAddress  '模块的信息
     Public arr_Workspace() As Workspace
+    Public dic_sheet As Hashtable   '记录工作表的名称，方便查找模块的时候去掉
 #End Region
 
     Private my_path As String
@@ -452,6 +453,27 @@ Public Class CCompdocFile
         Return 0
     End Function
 
+    '获取'--Document=ThisWorkbook/&H00000000  工作表和ThisWorkbook的形式
+    Private Function GetSheetName(str_PROJECT As String)
+        Dim re As Object = Nothing
+        Dim match_coll As Object = Nothing
+
+        re = CreateObject("VBScript.RegExp") 'Microsoft VBScript Tegular Expressions 5.5
+        With re
+            .Global = True                  '搜索全部字符，false搜索到第1个即停止
+            .MultiLine = False              '是否多行
+            .IgnoreCase = False             '区分大小写
+            .Pattern = Chr(&HD) & Chr(&HA) & "Document=(.*?)/&H00000000"
+            match_coll = .Execute(str_PROJECT)            '返回MatchCollection对象
+        End With
+
+        dic_sheet = New Hashtable
+        For i = 0 To match_coll.Count - 1
+            dic_sheet.Add(match_coll(i).submatches(0), i)
+        Next
+        Return 0
+    End Function
+
     '在PROJECT的stream中，利用正则查找模块
     Function GetModule()
         Dim str_PROJECT As String
@@ -466,6 +488,7 @@ Public Class CCompdocFile
         Dim str_hiden_module
         Dim arr_byte() As Byte = Nothing, stream_len As Integer
 
+
         '有可能存在隐藏的模块，形式如0D0A0D0A0D0A0D0A0D0A0D0A0D0A
         '至少包含8个长度(Module=)
         str_hiden_module = Chr(&HD) & Chr(&HA)
@@ -476,7 +499,7 @@ Public Class CCompdocFile
             Return -1
         End If
         str_PROJECT = System.Text.Encoding.Default.GetString(arr_byte)
-        'MsgBox(str_PROJECT)
+        GetSheetName(str_PROJECT)
 
         If if_short Then
             step_address = 64
@@ -706,8 +729,9 @@ Public Class CCompdocFile
 
     Private Function GetFileByte() As Integer
         MFunc.read_file_to_byte(Me.path, file_byte)
-        If Not IsCompdocFile() Then Return 0
         FileAddress = GCHandle.Alloc(file_byte, GCHandleType.Pinned).AddrOfPinnedObject()
+
+        If Not IsCompdocFile() Then Return 0
         Return 1
     End Function
 
@@ -715,8 +739,14 @@ Public Class CCompdocFile
         Dim head_byte() As Byte = {&HD0, &HCF, &H11, &HE0, &HA1, &HB1， &H1A, &HE1}
         For i As Integer = 0 To head_byte.Length - 1
             If head_byte(i) <> file_byte(i) Then
-                MsgBox("选择的不是复合文档。")
-                Return False
+                'MsgBox("选择的不是复合文档。")
+                If file_byte(0) = &H50 AndAlso file_byte(1) = &H4B Then
+                    Dim zip As CZipFile = New CZipFile()
+                    Return zip.GetStructure(file_byte, FileAddress)
+                Else
+                    Return False
+                End If
+
             End If
         Next
         Return True

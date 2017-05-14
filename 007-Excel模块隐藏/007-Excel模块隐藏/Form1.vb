@@ -224,7 +224,7 @@
         Dim k_font As Integer = 0
         Dim pre_address As Integer = 0  '记录上一个地址
 
-        If Not CheckCls() Then Exit Function
+        If Not CheckCls() Then Return 0
 
         Dim i_row As Integer = cls_cf.GetStream(dir_name, arr_byte, stream_len, arr_address, if_short)
 
@@ -512,7 +512,8 @@
 
         For i = 0 To cls_cf.arr_VBA.Length - 1
             Dim str As String = cls_cf.arr_VBA(i)
-            If Not str Like "__SRP_*" Then
+
+            If (Not str Like "__SRP_*") AndAlso (Not cls_cf.dic_sheet.Contains(Split(str, vbNullChar)(0))) Then
                 Dim TB As System.Windows.Forms.TextBox = New TextBox
                 TB.Text = cls_cf.arr_VBA(i)
                 TB.Width = gb_vba_dir.Width - 20
