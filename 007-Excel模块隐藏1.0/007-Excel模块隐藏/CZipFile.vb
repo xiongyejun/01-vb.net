@@ -144,7 +144,11 @@ Public Class CZipFile
         Next
 
         '从p_vbaBin开始写入文件
-        Dim fw As FileStream = New FileStream(Me.path & "new.xlsm", FileMode.Create)
+        Dim tmp_file_name As String = Me.path
+        tmp_file_name = tmp_file_name.Substring(0, InStrRev(tmp_file_name, ".") - 1) & "(new)." & tmp_file_name.Substring(InStrRev(tmp_file_name, "."))
+
+        'MsgBox(tmp_file_name)
+        Dim fw As FileStream = New FileStream(tmp_file_name, FileMode.Create)
         'Dim fw As FileStream = New FileStream(Me.path, FileMode.Open)
 
         Dim i_seek As Integer = 0

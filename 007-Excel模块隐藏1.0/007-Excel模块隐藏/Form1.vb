@@ -89,6 +89,9 @@
             .Left = 5
             .Height = i_HEIGHT
             .Width = 200
+
+            '.Dock = DockStyle.Fill
+            .AllowDrop = True
         End With
 
         i_left += tree_dir.Width
@@ -130,7 +133,10 @@
         Me.Controls.Add(gb_workspace)
         Me.Controls.Add(lb_tishi)
 
-        Me.WindowState = FormWindowState.Maximized
+        'Me.WindowState = FormWindowState.Maximized
+        Me.Width = 1000
+        Me.Height = 600
+        Me.StartPosition = FormStartPosition.WindowsDefaultBounds
     End Sub
 
     Private Sub Form1_Resize(sender As Object, e As EventArgs) Handles Me.Resize
@@ -612,4 +618,29 @@
         End If
 
     End Function
+
+    Private Sub tree_dir_DragDrop(sender As Object, e As DragEventArgs) Handles tree_dir.DragDrop
+        'sender.Items.Clear() '清理列表
+        'For Each s As String In e.Data.GetData(DataFormats.FileDrop) '循环枚举数据
+        '    MsgBox(s) '添加到表
+        'Next
+
+        Dim file_name As String = e.Data.GetData(DataFormats.FileDrop)(0)
+        Me.Text = file_name
+
+        If MFunc.IsCompdocFile(file_name) = -1 Then
+            MsgBox（"选择的文件不可识别。"）
+            Exit Sub
+        ElseIf MFunc.IsCompdocFile(file_name) = 0 Then
+            cls_cf = New CXlsFile(file_name)
+        Else
+            cls_cf = New CZipFile(file_name)
+        End If
+
+        If CheckCls() Then TreeNode()
+    End Sub
+
+    Private Sub tree_dir_DragEnter(sender As Object, e As DragEventArgs) Handles tree_dir.DragEnter
+        e.Effect = DragDropEffects.Link '接受拖放数据，启用拖放效果
+    End Sub
 End Class
