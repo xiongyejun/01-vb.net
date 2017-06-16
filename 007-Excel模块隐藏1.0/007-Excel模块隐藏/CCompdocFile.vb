@@ -6,6 +6,13 @@ Public Class CCompdocFile
     Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" _
     (ByVal Destination As IntPtr, ByVal Source As IntPtr, ByVal Length As Integer)
 
+    Private Declare Function RtlDecompressBuffer Lib "NTDLL" (ByVal flags As Short,
+                    ByVal BuffUnCompressed As IntPtr, ByVal UnCompSize As Integer,
+                    ByVal BuffCompressed As IntPtr, ByVal CompBuffSize As Integer,
+                    ByVal OutputSize As Integer) As Integer
+
+
+
     Const CFHEADER_SIZE As Integer = 2 ^ 9
     Public Const DIR_SIZE As Integer = 128
 
@@ -684,6 +691,35 @@ Public Class CCompdocFile
 
     End Sub
 
+    'stream解压缩
+    'http://www.lm158.com/wx/2016729/169673.html
+    Function DecompressStream(ByRef Origin() As Byte) As String
+        Dim Result() As Byte
+        Dim ResultSize As Integer = 0
+        Dim i As Integer
+        Dim Origin2() As Byte
+        Dim Output() As Byte
+
+        '声明结果输租
+        ReDim Result(Origin.Length * 2)
+        '原始数组中去除第一个字节
+        ReDim Origin2(Origin.Length - 1)
+        For i = 1 To UBound(Origin)
+            Origin2(i - 1) = Origin(i)
+        Next i
+        '解压
+
+        Dim p1 As IntPtr = GCHandle.Alloc(Result, GCHandleType.Pinned).AddrOfPinnedObject()
+        Dim p2 As IntPtr = GCHandle.Alloc(Origin2, GCHandleType.Pinned).AddrOfPinnedObject()
+        RtlDecompressBuffer(2, p1, Result.Length, p2, Origin2.Length, ResultSize)
+
+        ReDim Output(ResultSize - 1)
+        For i = 0 To ResultSize - 1
+            Output(i) = Result(i)
+        Next i
+
+        Return System.Text.Encoding.Default.GetString(Output)
+    End Function
 
 
     Protected Overrides Sub Finalize()

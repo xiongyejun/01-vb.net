@@ -21,6 +21,9 @@
     Private gb_vba_dir As System.Windows.Forms.Panel
     Private lb_tishi As System.Windows.Forms.Label
 
+    Private WithEvents cms As ContextMenuStrip
+    Private WithEvents cmsShow As New System.Windows.Forms.ToolStripMenuItem
+
     Dim cls_cf As CCompdocFile
 #End Region
 
@@ -30,6 +33,12 @@
         Dim i_left As Integer = 5
         Dim i_top As Integer = 5
         Const i_HEIGHT As Integer = 300
+
+        cms = New System.Windows.Forms.ContextMenuStrip
+        cmsShow.Text = "ShowModule"
+        With cms.Items
+            .Add(cmsShow)
+        End With
 
         Me.MenuStrip1 = New System.Windows.Forms.MenuStrip()
         Me.MenuStrip1.SuspendLayout()
@@ -92,6 +101,7 @@
 
             '.Dock = DockStyle.Fill
             .AllowDrop = True
+            .ContextMenustrip = cms
         End With
 
         i_left += tree_dir.Width
@@ -642,5 +652,26 @@
 
     Private Sub tree_dir_DragEnter(sender As Object, e As DragEventArgs) Handles tree_dir.DragEnter
         e.Effect = DragDropEffects.Link '接受拖放数据，启用拖放效果
+    End Sub
+
+    Private Sub cmsShow_Click(sender As Object, e As EventArgs) Handles cmsShow.Click
+        Dim b() As Byte = Nothing
+        Dim stream_len As Integer
+        Dim arr_address(,) As Integer = Nothing
+        Dim if_short As Boolean
+
+        If CheckCls() Then
+            For Each n As TreeNode In Me.tree_dir.Nodes
+                n = EachSubNode(n)
+                If n IsNot Nothing Then
+
+                    cls_cf.GetStream(n.Text, b, stream_len, arr_address, if_short)
+                    MsgBox(cls_cf.DecompressStream(b))
+
+
+                    Exit Sub
+                End If
+            Next
+        End If
     End Sub
 End Class

@@ -25,8 +25,8 @@ Public Class Form1
         cms_OpenMP3Dir.Text = "Open MP3 Dir"
         cms_TopMost.Text = "TopMost"
         With cms.Items
-            .Add(cms_cls)
             .Add(cms_playMP3)
+            .Add(cms_cls)
             .Add(cms_OpenMP3Dir)
             .Add(cms_TopMost)
         End With
@@ -38,6 +38,7 @@ Public Class Form1
             .Width = TB_WIDTH
             .Height = TB_HEIGHT
             .ForeColor = Color.Red
+            .ContextMenuStrip = cms
         End With
 
         i_left += rtb_original.Width
@@ -68,6 +69,7 @@ Public Class Form1
         Me.Text = "有道翻译——Me.TopMost=" & Me.TopMost.ToString
         '初始到左上角
         Me.Location = New Point(Screen.PrimaryScreen.Bounds.Width - Me.Width, 0)
+
     End Sub
     Private Sub Form1_Resize(sender As Object, e As EventArgs) Handles Me.Resize
         Me.rtb_original.Width = (Me.Width - 15) / 2
@@ -96,8 +98,15 @@ Public Class Form1
         GetMp3()
     End Sub
 
+    Private Sub rtb_original_DoubleClick(sender As Object, e As EventArgs) Handles rtb_original.DoubleClick
+        Me.rtb_original.Text = ""
+        Me.rtb_original.Paste()
+    End Sub
+
     Private Sub rtb_original_TextChanged(sender As Object, e As EventArgs) Handles rtb_original.TextChanged
-        Dim str_word As String = Me.rtb_original.Text
+        Dim str_word As String = Trim(Me.rtb_original.Text)
+        Me.rtb_original.Text = str_word
+
         If str_word.Length = 0 Then
             Me.rtb_result.Text = ""
         Else
@@ -184,6 +193,8 @@ Public Class Form1
     Private Sub cms_OpenMP3Dir_Click(sender As Object, e As EventArgs) Handles cms_OpenMP3Dir.Click
         System.Diagnostics.Process.Start(Application.StartupPath & "\MP3")
     End Sub
+
+
 
 
 

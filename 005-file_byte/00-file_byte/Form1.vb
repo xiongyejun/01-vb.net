@@ -20,6 +20,8 @@
     Private lb_start As System.Windows.Forms.Label
     Private WithEvents tb_start As System.Windows.Forms.TextBox
     Private WithEvents btn_wr As System.Windows.Forms.Button
+
+    Private WithEvents btn_read_hex_to_file As System.Windows.Forms.Button
 #End Region
 
     Private Sub Form1_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
@@ -146,6 +148,17 @@
             .Top = i_top + tb_start.Height
             .Text = "确定"
         End With
+
+        btn_read_hex_to_file = New Button
+        With btn_read_hex_to_file
+            .Text = "读取HEX 另存文件"
+            .Left = Me.lv_hex.Width + Me.lv_hex.Left + 5
+            .Top = i_top + gb_write.Height
+            .Width = gb_write.Width - 15
+            .Height = 30
+        End With
+        Me.Controls.Add(btn_read_hex_to_file)
+
 
         Me.gb_write.Controls.Add(lb_wr)
         Me.gb_write.Controls.Add(tb_wr)
@@ -298,4 +311,31 @@
         Me.tb_start.Text = str
     End Sub
 
+    Private Sub btn_read_hex_to_file_Click(sender As Object, e As EventArgs) Handles btn_read_hex_to_file.Click
+        Dim f As OpenFileDialog = New OpenFileDialog
+        Dim read_file As String = ""
+
+        f.Title = "选择内容为HEX的txt文件。"
+        If f.ShowDialog = DialogResult.OK Then
+            read_file = f.FileName
+        End If
+        If read_file <> "" Then
+            Dim str_hex As String = MFunc.ReadFileToString(read_file)
+            Dim file_byte(str_hex.Length / 2 - 1) As Byte
+            For i As Integer = 0 To str_hex.Length - 1 Step 2
+                file_byte(i / 2) = CByte("&H" & str_hex.Substring(i, 2))
+            Next
+
+            Dim sf As SaveFileDialog = New SaveFileDialog
+            sf.Title = "请输入要保存的文件名。"
+            If sf.ShowDialog = DialogResult.OK Then
+                Dim save_file As String = sf.FileName
+                If save_file <> "" Then
+                    MFunc.write_byte_to_file(save_file, file_byte, 0)
+                End If
+            End If
+
+        End If
+
+    End Sub
 End Class
