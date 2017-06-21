@@ -9,8 +9,7 @@ Public Class CCompdocFile
     Private Declare Function RtlDecompressBuffer Lib "NTDLL" (ByVal flags As Short,
                     ByVal BuffUnCompressed As IntPtr, ByVal UnCompSize As Integer,
                     ByVal BuffCompressed As IntPtr, ByVal CompBuffSize As Integer,
-                    ByVal OutputSize As Integer) As Integer
-
+                    ByRef OutputSize As Integer) As Integer
 
 
     Const CFHEADER_SIZE As Integer = 2 ^ 9
@@ -693,34 +692,49 @@ Public Class CCompdocFile
 
     'stream解压缩
     'http://www.lm158.com/wx/2016729/169673.html
-    Function DecompressStream(ByRef Origin() As Byte) As String
+    Function DecompressStream(Origin() As Byte) As String
         Dim Result() As Byte
-        Dim ResultSize As Integer = 0
-        Dim i As Integer
+        Dim ResultSize As Integer
+        Dim i As Long, j As Integer
         Dim Origin2() As Byte
-        Dim Output() As Byte
 
-        '声明结果输租
-        ReDim Result(Origin.Length * 2)
-        '原始数组中去除第一个字节
-        ReDim Origin2(Origin.Length - 1)
-        For i = 1 To UBound(Origin)
-            Origin2(i - 1) = Origin(i)
+        ReDim Result(UBound(Origin) * 3)
+
+        For i = 0 To UBound(Origin) - 8
+            If FindAtrribut(Origin, i) Then
+                Exit For
+            End If
         Next i
-        '解压
+        j = i - 3
+
+        ReDim Origin2(UBound(Origin) - j)
+
+        For i = j To UBound(Origin)
+            Origin2(i - j) = Origin(i)
+        Next
 
         Dim p1 As IntPtr = GCHandle.Alloc(Result, GCHandleType.Pinned).AddrOfPinnedObject()
         Dim p2 As IntPtr = GCHandle.Alloc(Origin2, GCHandleType.Pinned).AddrOfPinnedObject()
-        RtlDecompressBuffer(2, p1, Result.Length, p2, Origin2.Length, ResultSize)
 
-        ReDim Output(ResultSize - 1)
-        For i = 0 To ResultSize - 1
-            Output(i) = Result(i)
-        Next i
+        RtlDecompressBuffer(CShort(2), p1, Result.Length, p2, Origin2.Length, ResultSize)
 
-        Return System.Text.Encoding.Default.GetString(Output)
+        ReDim Preserve Result(ResultSize - 1)
+
+        Return System.Text.Encoding.Default.GetString(Result)
     End Function
 
+    Function FindAtrribut(Origin() As Byte, i As Long) As Boolean
+        Dim j As Integer
+
+        For j = 0 To 7
+            If Origin(j + i) <> Asc(Mid$("Attribut", j + 1, 1)) Then
+                FindAtrribut = False
+                Exit Function
+            End If
+        Next
+
+        FindAtrribut = True
+    End Function
 
     Protected Overrides Sub Finalize()
         MyBase.Finalize()

@@ -1,6 +1,11 @@
-﻿Public Class Form1
+﻿Imports System.Runtime.InteropServices
+
+Public Class Form1
 
 #Region "定义"
+    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" _
+    (ByVal Destination As IntPtr, ByVal Source As IntPtr, ByVal Length As Integer)
+
     Friend WithEvents MenuStrip1 As System.Windows.Forms.MenuStrip
     Friend WithEvents 菜单ToolStripMenuItem As System.Windows.Forms.ToolStripMenuItem
     Friend WithEvents 选择文件ToolStripMenuItem As System.Windows.Forms.ToolStripMenuItem
@@ -101,7 +106,7 @@
 
             '.Dock = DockStyle.Fill
             .AllowDrop = True
-            .ContextMenustrip = cms
+            .ContextMenuStrip = cms
         End With
 
         i_left += tree_dir.Width
@@ -665,8 +670,13 @@
                 n = EachSubNode(n)
                 If n IsNot Nothing Then
 
-                    cls_cf.GetStream(n.Text, b, stream_len, arr_address, if_short)
-                    MsgBox(cls_cf.DecompressStream(b))
+                    If cls_cf.GetStream(n.Text, b, stream_len, arr_address, if_short) > 0 Then
+                        Dim f As New FCode
+                        f.RTBText = cls_cf.DecompressStream(b)
+                        f.Show()
+                        f = Nothing
+                    End If
+
 
 
                     Exit Sub
@@ -674,4 +684,15 @@
             Next
         End If
     End Sub
+
+    Private Function FindAtrribut(Origin() As Byte, i As Long) As Boolean
+        For j As Integer = 0 To 7
+            If Origin(j + i) <> Asc(Mid$("Attribut", j + 1, 1)) Then
+                FindAtrribut = False
+                Exit Function
+            End If
+        Next
+
+        FindAtrribut = True
+    End Function
 End Class
