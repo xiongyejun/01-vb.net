@@ -28,6 +28,7 @@ Public Class Form1
 
     Private WithEvents cms As ContextMenuStrip
     Private WithEvents cmsShow As New System.Windows.Forms.ToolStripMenuItem
+    Private WithEvents cmsShowAll As New System.Windows.Forms.ToolStripMenuItem
 
     Dim cls_cf As CCompdocFile
 #End Region
@@ -40,9 +41,12 @@ Public Class Form1
         Const i_HEIGHT As Integer = 300
 
         cms = New System.Windows.Forms.ContextMenuStrip
-        cmsShow.Text = "ShowModule"
+        cmsShow.Text = "ShowCode"
+        cmsShowAll.Text = "所有code"
+
         With cms.Items
             .Add(cmsShow)
+            .Add(cmsShowAll)
         End With
 
         Me.MenuStrip1 = New System.Windows.Forms.MenuStrip()
@@ -659,6 +663,7 @@ Public Class Form1
         e.Effect = DragDropEffects.Link '接受拖放数据，启用拖放效果
     End Sub
 
+#Region "ShowCode"
     Private Sub cmsShow_Click(sender As Object, e As EventArgs) Handles cmsShow.Click
         Dim b() As Byte = Nothing
         Dim stream_len As Integer
@@ -677,22 +682,44 @@ Public Class Form1
                         f = Nothing
                     End If
 
-
-
                     Exit Sub
                 End If
             Next
         End If
     End Sub
 
-    Private Function FindAtrribut(Origin() As Byte, i As Long) As Boolean
-        For j As Integer = 0 To 7
-            If Origin(j + i) <> Asc(Mid$("Attribut", j + 1, 1)) Then
-                FindAtrribut = False
-                Exit Function
+    Private Sub cmsShowAll_Click(sender As Object, e As EventArgs) Handles cmsShowAll.Click
+        Dim ArrCode(cls_cf.arr_VBA.Length - 1) As String
+        Dim k As Integer = -1
+        Dim b() As Byte = Nothing
+        Dim stream_len As Integer
+        Dim arr_address(,) As Integer = Nothing
+        Dim if_short As Boolean
+
+        For i As Integer = 0 To cls_cf.arr_VBA.Length - 1
+            Dim str As String = cls_cf.arr_VBA(i)
+            str = Split(str, vbNullChar)(0)
+
+            If (Not str Like "__SRP_*") AndAlso (Not cls_cf.dic_sheet.Contains(str)) Then
+                If str <> "dir" AndAlso str <> "_VBA_PROJECT" Then
+                    If cls_cf.GetStream(str, b, stream_len, arr_address, if_short) > 0 Then
+                        k += 1
+
+                        ArrCode(k) = "--------------" & str & "--------------" & vbNewLine
+                        ArrCode(k) &= cls_cf.DecompressStream(b)
+                    End If
+
+                End If
             End If
+
         Next
 
-        FindAtrribut = True
-    End Function
+        ReDim Preserve ArrCode(k)
+        Dim f As New FCode
+        f.RTBText = Join(ArrCode, vbNewLine)
+        f.Show()
+        f = Nothing
+    End Sub
+#End Region
+
 End Class
