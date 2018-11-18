@@ -1,7 +1,7 @@
 ﻿Imports System.Net
 Imports System.IO
 
-Module Func
+Module ControlAdd
     Public Const MOUSEEVENTF_MOVE = &H1 '移动鼠标
     Public Const MOUSEEVENTF_ABSOLUTE = &H8000 '指定鼠标使用绝对坐标系，此时，屏幕在水平和垂直方向上均匀分割成65535×65535个单元
     Public Const MOUSEEVENTF_LEFTDOWN = &H2 '模拟鼠标左键按下
@@ -22,8 +22,6 @@ Module Func
     Public Const SW_SHOWMAXIMIZED As Integer = 3 '最大化窗口
     '将窗口设为系统的前台窗口。这个函数可用于改变用户目前正在操作的应用程序
     Public Declare Function SetForegroundWindow Lib "user32" (ByVal hwnd As Integer) As Integer
-    '获得整个窗口的范围矩形，窗口的边框、标题栏、滚动条及菜单等都在这个矩形内
-    Public Declare Function GetWindowRect Lib "user32" (ByVal hwnd As Integer, ByRef lpRect As RECT) As Integer
     '获得活动窗口的句柄
     Public Declare Function GetActiveWindow Lib "user32" Alias "GetActiveWindow" () As Integer
     '取得一个窗体的标题（caption）文字，或者一个控件的内容（在vb里使用：使用vb窗体或控件的caption或text属性）
@@ -64,6 +62,17 @@ Module Func
         form.Controls.Add(btn)
     End Sub
 
+    Sub checkBoxAdd(ByVal form As Object, ByVal cb As System.Windows.Forms.CheckBox, ByVal text As String, Optional ByVal iLeft As Integer = 5, Optional ByVal iTop As Integer = 0, Optional ByVal iWidth As Integer = 200, Optional ByVal iHeight As Integer = 30)
+        With cb
+            .Left = iLeft
+            .Top = iTop
+            .Width = iWidth
+            .Height = iHeight
+            .Text = text
+        End With
+        form.Controls.Add(cb)
+    End Sub
+
     Sub comboBoxAdd(ByVal form As Object, ByVal cb As System.Windows.Forms.ComboBox, ByVal text As String, Optional ByVal iLeft As Integer = 5, Optional ByVal iTop As Integer = 0, Optional ByVal iWidth As Integer = 100, Optional ByVal iHeight As Integer = 30)
         With cb
             .Left = iLeft
@@ -85,16 +94,49 @@ Module Func
         form.Controls.Add(gp)
     End Sub
 
-    Sub labelAdd(ByVal form As Object, ByVal label As System.Windows.Forms.Label, ByVal labelText As String, Optional ByVal iLeft As Integer = 5, Optional ByVal iTop As Integer = 0, Optional ByVal iWidth As Integer = 100, Optional ByVal iHeight As Integer = 30)
+    Sub labelBoxAdd(ByVal form As Object, ByVal label As System.Windows.Forms.Label, ByVal labelText As String, Optional ByVal iLeft As Integer = 5, Optional ByVal iTop As Integer = 0, Optional ByVal iWidth As Integer = 100, Optional ByVal iHeight As Integer = 30)
         With label
             .Left = iLeft
             .Top = iTop + 5
             .Width = iWidth
             .Height = iHeight
             .Text = labelText
-            .AutoSize = True
+            '.AutoSize = True
         End With
         form.Controls.Add(label)
+    End Sub
+
+    Sub listViewAdd(ByVal form As Object, ByVal lv As System.Windows.Forms.ListView, Optional ByVal iLeft As Integer = 5, Optional ByVal iTop As Integer = 0, Optional ByVal iWidth As Integer = 100, Optional ByVal iHeight As Integer = 30)
+        With lv
+            .Left = iLeft
+            .Top = iTop
+            .Width = iWidth
+            .Height = iHeight
+        End With
+        form.Controls.Add(lv)
+    End Sub
+
+    Sub numericUpDownAdd(ByVal form As Object, ByVal num As System.Windows.Forms.NumericUpDown, Optional ByVal iLeft As Integer = 5, Optional ByVal iTop As Integer = 0, Optional ByVal iWidth As Integer = 60, Optional ByVal iHeight As Integer = 30)
+        With num
+            .Left = iLeft
+            .Top = iTop + 5
+            .Width = iWidth
+            .Height = iHeight
+        End With
+        form.Controls.Add(num)
+    End Sub
+
+    Sub radioButtonAdd(ByVal form As Object, rb As System.Windows.Forms.RadioButton, ByVal textBoxText As String, Optional ByVal iLeft As Integer = 5, Optional ByVal iTop As Integer = 0, Optional ByVal iWidth As Integer = 100, Optional ByVal iHeight As Integer = 30, Optional val As Boolean = False)
+        With rb
+            .Left = iLeft
+            .Top = iTop
+            .Width = iWidth
+            .Height = iHeight
+            .Text = textBoxText
+            .Checked = val
+            .AutoSize = True
+        End With
+        form.Controls.Add(rb)
     End Sub
 
     Sub textBoxAdd(ByVal form As Object, ByVal textBox As System.Windows.Forms.TextBox, ByVal textBoxText As String, Optional ByVal iLeft As Integer = 5, Optional ByVal iTop As Integer = 0, Optional ByVal iWidth As Integer = 100, Optional ByVal iHeight As Integer = 30)

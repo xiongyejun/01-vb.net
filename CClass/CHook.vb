@@ -3,18 +3,18 @@ Imports System.Threading, System.ComponentModel
 Imports System.Runtime.InteropServices
 
 
-Public Class hookClass
+Public Class CHook
 
 #Region "封送结构"
     Private Structure MouseHookStruct
-        Dim pt As POINT
+        Dim pt As Point
         Dim hwnd As Integer
         Dim wHitTestCode As Integer
         Dim dwExtraInfo As Integer
     End Structure
 
     Private Structure MouseLLHookStruct
-        Dim pt As POINT
+        Dim pt As Point
         Dim MouseData As Integer
         Dim Flags As Integer
         Dim Time As Integer
@@ -183,7 +183,7 @@ Public Class hookClass
 
     '析构函数
     Protected Overrides Sub Finalize()
-        unhook()
+        UnHook()
         MyBase.Finalize()
     End Sub
 #End Region
@@ -277,7 +277,6 @@ Public Class hookClass
 
         End If
 
-        Return 0
     End Function
 
     '鼠标消息的委托处理代码
@@ -314,7 +313,7 @@ Public Class hookClass
             End If
 
             '从回调函数中得到鼠标的消息
-            Dim e As MouseEventArgs = New MouseEventArgs(moubut, clickCount, MousehookStruct.pt.x, MousehookStruct.pt.y, mouseDelta)
+            Dim e As MouseEventArgs = New MouseEventArgs(moubut, clickCount, MousehookStruct.pt.X, MousehookStruct.pt.Y, mouseDelta)
             RaiseEvent MouseActivity(Me, e)
         End If
         Return CallNextHookEx(hMouseHook, nCode, wParam, lParam)

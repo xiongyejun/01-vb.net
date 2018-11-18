@@ -62,7 +62,7 @@ Module ControlAdd
         form.Controls.Add(btn)
     End Sub
 
-    Sub checkBoxAdd(ByVal form As Object, ByVal cb As System.Windows.Forms.CheckBox, ByVal text As String, Optional ByVal iLeft As Integer = 5, Optional ByVal iTop As Integer = 0, Optional ByVal iWidth As Integer = 100, Optional ByVal iHeight As Integer = 30)
+    Sub checkBoxAdd(ByVal form As Object, ByVal cb As System.Windows.Forms.CheckBox, ByVal text As String, Optional ByVal iLeft As Integer = 5, Optional ByVal iTop As Integer = 0, Optional ByVal iWidth As Integer = 200, Optional ByVal iHeight As Integer = 30)
         With cb
             .Left = iLeft
             .Top = iTop
