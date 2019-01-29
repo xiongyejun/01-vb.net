@@ -5,6 +5,9 @@ Module MStruct
     Public DB_Info As DBInfo
     Public DicSet As Dictionary(Of String, String)
     Public FileSet As String = Application.StartupPath & "\Set.set"
+    Public SQLiteDllPath As String = "E:\00-学习资料\00-Excel学习资料\SQLite"
+    Public Const PAGE_NUM As Integer = 20
+    Public cdb As CSQLite
 
     Enum ExtendFieldEnum
         Tables
@@ -46,6 +49,7 @@ Module MStruct
         Dim Name As String
         Dim Field As FieldInfo
 
+        Dim bHasID As Boolean '是否有ID这个字段
         Dim bUseMyIdTables As Boolean '是否有表格引用了本表的ID
         Dim UseMyIdTables() As Integer '有哪些表格引用了本表的ID
         Dim ExtendField As ExtendFieldInfo '把xxID的字段扩展出来
@@ -62,7 +66,7 @@ Module MStruct
         Dim Path As String
         Dim ActivateTable As String '当前在操作的表
         Dim ActivateTableIndex As Integer
-        Dim Tables() As TableInfo   'TableInfo
+        Dim Tables() As CSQLite.TableInfo   'TableInfo
         Dim DicTableIndex As Dictionary(Of String, Integer)
     End Structure
 

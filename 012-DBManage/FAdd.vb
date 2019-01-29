@@ -35,17 +35,6 @@ Public Class FAdd
     ''' </summary>
     ''' <remarks></remarks>
     Private DB_FieldsType() As System.Type
-
-    ''' <summary>
-    ''' 添加到表中使用的ado
-    ''' </summary>
-    ''' <remarks></remarks>
-    Dim c_ado As New CADO(DB_Info.Path)
-    ''' <summary>
-    ''' 记录添加数据
-    ''' </summary>
-    ''' <remarks></remarks>
-    Dim dt As DataTable
     ''' <summary>
     ''' 设置字段
     ''' </summary>
@@ -87,7 +76,13 @@ Public Class FAdd
             tb(i).Left = 5 + lb.Width
             tb(i).Top = iTop
             tb(i).Tag = i
-            If DB_Fields(i).Length > 2 Then
+
+            If DB_Fields(i) = "ID" Then
+                tb(i).ReadOnly = True
+                tb(i).Text = GetId().ToString
+            ElseIf DB_Fields(i) = "inserttime" Then
+                tb(i).Text = Format(Now(), "yyyy-mm-dd hh-mm-ss")
+            Else
                 If Strings.Right(DB_Fields(i), 2) = "ID" Then
                     tb(i).ReadOnly = True
                     AddHandler tb(i).Click, AddressOf tb_Click
@@ -136,9 +131,7 @@ Public Class FAdd
         Me.Width = LB_WIDTH + TB_WIDTH + 20
         Me.Height = iTop + 70
 
-        '初始化dt的结构
-        c_ado.StrSql = "Select * From [" & DB_Info.ActivateTable & "] Where 1=2"
-        dt = c_ado.GetData()
+        SetFromPos(Me)
     End Sub
 
     Private Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click
@@ -146,46 +139,67 @@ Public Class FAdd
     End Sub
 
     Private Sub btnOK_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnOK.Click
-        AddRowToDt()
-        '更新数据
-        c_ado.UpdateData(dt, DB_Info.ActivateTable)
+        AddToDB()
+
         Me.Close()
     End Sub
 
     Private Sub btnGoOn_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnGoOn.Click
-        AddRowToDt()
+        If Not AddToDB() Then Return
         '清空tb
         For i As Integer = 0 To tb.Length - 1
-            tb(i).Clear()
+            '只读的，要选择的那些，一般添加的时候是同一类型的，可以不用重新选择
+            If Not tb(i).ReadOnly Then
+                If DB_Fields(i) <> "inserttime" Then
+                    tb(i).Clear()
+                End If
+            End If
+
         Next
+        tb(0).Text = GetId().ToString
     End Sub
-    ''' <summary>
-    ''' 将记录添加到dt中
-    ''' </summary>
-    ''' <returns></returns>
-    ''' <remarks></remarks>
-    Private Function AddRowToDt() As Long
-        Dim r As DataRow = dt.NewRow()
+
+    Private Function AddToDB() As Boolean
+        Dim values(DB_Fields.Length - 1) As String
         For i As Integer = 0 To tb.Length - 1
-            If DB_Fields(i) <> "ID" Then
-                r.Item(i) = tb(i).Text
+            If DB_FieldsType(i).Name = "String" Then
+                values(i) = "'" & tb(i).Text & "'"
+            Else
+                values(i) = tb(i).Text
             End If
         Next
-        dt.Rows.Add(r)
 
-        Return 1
+        Dim ret As Integer = cdb.ExecuteNonQuery(String.Format("insert into {0} values ({1})", DB_Info.Tables(DB_Info.ActivateTableIndex).Name, Join(values, ",")))
+
+        If ret Then
+            MsgBox(cdb.GetErr)
+            Return False
+        End If
+
+        Return True
     End Function
 
+    Private Function GetId() As Integer
+        DB_Info.Tables(DB_Info.ActivateTableIndex).LastID = cdb.GetColZeroValue(String.Format("select max(ID) from {0}", DB_Info.Tables(DB_Info.ActivateTableIndex).Name))
+        If DB_Info.Tables(DB_Info.ActivateTableIndex).LastID = -1 Then
+            MsgBox(DB_Info.Tables(DB_Info.ActivateTableIndex).Name & " LastID获取出错了。" & vbNewLine & cdb.GetErr)
+            Return -1
+        End If
+        Return DB_Info.Tables(DB_Info.ActivateTableIndex).LastID + 1
+    End Function
 
     Private Sub tb_Click(ByVal sender As Object, ByVal e As System.EventArgs)
-        Dim f As New FSelectID
+        Dim f As New FSelectItem
         Dim t As TextBox = CType(sender, TextBox)
 
         f.SetFormText = "选择" & DB_Fields(t.Tag)
+        Dim tableName As String = DB_Fields(t.Tag).ToString
+        tableName = tableName.Substring(0, Len(tableName) - 2)
+        f.TableName = tableName
         f.ShowDialog(Me)
 
-        Dim tmp As Integer = f.ReturnValue
-        If tmp Then t.Text = tmp
+        Dim tmp As String = f.ReturnValue
+        If tmp <> "" Then t.Text = tmp
 
         f.Close()
     End Sub

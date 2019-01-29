@@ -5,7 +5,7 @@
 
 Public Class FSearchCondition
     Private WithEvents tb As TextBox
-
+    Private WithEvents pl As Panel
     ''' <summary>
     ''' 确认
     ''' </summary>
@@ -119,7 +119,7 @@ Public Class FSearchCondition
     End Function
 
     Private Sub FCondition_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
-        Const LB_WIDTH As Integer = 150
+        Const LB_WIDTH As Integer = 170
         Const CB_WIDTH As Integer = 80
         Const TB_WIDTH As Integer = 200
         Dim iTop As Integer = 5
@@ -127,6 +127,7 @@ Public Class FSearchCondition
 
         InitConditions()
 
+        pl = New Panel
         ReDim ctls(DB_Fields.Length - 1)
         For i As Integer = 0 To DB_Fields.Length - 1
             ctls(i).lb = New Label
@@ -156,7 +157,6 @@ Public Class FSearchCondition
                     End If
 
                 End With
-                AddHandler .SelectedIndexChanged, AddressOf cb_SelectedIndexChanged
             End With
 
             ctls(i).tb = New TextBox
@@ -165,17 +165,28 @@ Public Class FSearchCondition
                 .Left = 5 + ctls(i).cb.Left + ctls(i).cb.Width
                 .Top = iTop
                 .Tag = i
-
-                AddHandler .TextChanged, AddressOf tb_TextChanged
             End With
+            If Strings.Right(DB_Fields(i), 2) = "ID" Then
+                AddHandler ctls(i).tb.Click, AddressOf tb_Click
+            End If
 
             iTop += ctls(i).lb.Height
-            Me.Controls.Add(ctls(i).lb)
-            Me.Controls.Add(ctls(i).cb)
-            Me.Controls.Add(ctls(i).tb)
+            pl.Controls.Add(ctls(i).lb)
+            pl.Controls.Add(ctls(i).cb)
+            pl.Controls.Add(ctls(i).tb)
         Next
 
-        iTop += 10
+        With pl
+            .BorderStyle = BorderStyle.FixedSingle
+            .Left = iLeft
+            .Top = 5
+            .Width = LB_WIDTH + TB_WIDTH + CB_WIDTH + 30
+            .Height = 450 - 70
+            .AutoScroll = True
+        End With
+        Me.Controls.Add(pl)
+
+        iTop = pl.Height + 10
         btnOK = New Button
         With btnOK
             .Text = "确定"
@@ -196,16 +207,45 @@ Public Class FSearchCondition
         End With
         Me.Controls.Add(btnCancel)
 
+        Me.CancelButton = btnCancel
         Me.MaximizeBox = False
         Me.FormBorderStyle = Windows.Forms.FormBorderStyle.FixedDialog
-        Me.Width = LB_WIDTH + TB_WIDTH + CB_WIDTH + 20
-        Me.Height = iTop + 70
+        Me.Width = LB_WIDTH + TB_WIDTH + CB_WIDTH + 45
+        Me.Height = 450
 
+        SetFromPos(Me)
     End Sub
 
+    Private Sub tb_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+        Dim f As New FSelectItem
+        Dim t As TextBox = CType(sender, TextBox)
+        Dim index As Integer = Int(t.Tag)
 
+        f.SetFormText = "选择" & DB_Fields(index)
+        If Strings.Right(DB_Fields(index), 3) = ".ID" Then
+            f.TableName = DB_Fields(index).Substring(0, DB_Fields(index).Length - 3)
+        Else
+            f.TableName = DB_Fields(index).Substring(0, DB_Fields(index).Length - 2)
+        End If
+        f.ReturnCol = 0
+        f.ShowDialog(Me)
+
+        Dim tmp As String = f.ReturnValue
+        If tmp <> "" Then t.Text = tmp
+
+        f.Close()
+    End Sub
+
+    ''' <summary>
+    ''' 遍历ctls，获取设置的查询条件
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
+    ''' <remarks></remarks>
     Private Sub btnOK_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnOK.Click
         For i As Integer = 0 To ctls.Length - 1
+            GetResult(i, ctls(i).cb.SelectedIndex)
+
             If ctls(i).Result <> "" Then
                 return_Value &= (" And " & ctls(i).Result)
             End If
@@ -214,21 +254,17 @@ Public Class FSearchCondition
     End Sub
 
     Private Sub btnCancel_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles btnCancel.Click
+        return_Value = ""
         Me.Hide()
     End Sub
-
-    Private Sub cb_SelectedIndexChanged(ByVal sender As Object, ByVal e As System.EventArgs)
-        Dim index As Integer
-        index = Val(sender.tag)
-        GetResult(index, ctls(index).cb.SelectedIndex)
-    End Sub
-
-    Private Sub tb_TextChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles tb.TextChanged
-        Dim index As Integer
-        index = Val(sender.tag)
-        GetResult(index, ctls(index).cb.SelectedIndex)
-    End Sub
-
+  
+    ''' <summary>
+    ''' 每一组设置的条件
+    ''' </summary>
+    ''' <param name="index"></param>
+    ''' <param name="selectIndex"></param>
+    ''' <returns></returns>
+    ''' <remarks></remarks>
     Private Function GetResult(ByVal index As Integer, ByVal selectIndex As Integer) As Boolean
         'cb选择了，并且tb填写了数据
         If selectIndex > 0 AndAlso ctls(index).tb.Text <> "" Then
