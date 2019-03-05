@@ -36,11 +36,9 @@ Module MFunc
     Function SelectDB() As Boolean
         Dim fd As OpenFileDialog = New OpenFileDialog
 
-        fd.Filter = "Access(*.mdb;*.accdb)|*.mdb;*.accdb"
+        fd.Filter = "SQLite(*.sqlite)|*.sqlite"
         If fd.ShowDialog = vbOK Then
             DB_Info.Path = fd.FileName
-            InitDBInfo()
-
             Return True
         End If
 
@@ -48,8 +46,14 @@ Module MFunc
     End Function
 
     Function InitDBInfo() As Integer
+        '读取表和字段信息
+        DB_Info.Tables = cdb.GetTableInfo()
+
         DB_Info.DicTableIndex = New Dictionary(Of String, Integer)
-        DB_Info.Tables = GetTables(DB_Info.Path)
+        For i As Integer = 0 To DB_Info.Tables.Count - 1
+            DB_Info.DicTableIndex(DB_Info.Tables(i).Name) = i
+        Next
+
         GetPointer()
         ExtendField()
 
@@ -57,50 +61,6 @@ Module MFunc
     End Function
 
 
-    ''' <summary>
-    ''' 获取表格的信息：表格名称、字段、字段类型、主键等
-    ''' </summary>
-    ''' <param name="DBPath"></param>
-    ''' <returns></returns>
-    ''' <remarks></remarks>
-    Private Function GetTables(ByVal DBPath As String) As TableInfo()
-        Dim c_ado As New CADO(DBPath)
-        Dim Arr() As String = c_ado.GetTables()
-        Dim Tables(Arr.Length - 1) As TableInfo
-        Dim dic As New Dictionary(Of String, Integer)
-
-        For i As Integer = 0 To Arr.Length - 1
-            Dim table_info As TableInfo = Nothing
-            table_info.Name = Arr(i)
-            DB_Info.DicTableIndex(table_info.Name) = i
-
-            c_ado.StrSql = "Select * From [" & table_info.Name & "] Where 1=2"
-            Dim dt As DataTable = c_ado.GetData()
-
-            ReDim table_info.Field.Name(dt.Columns.Count - 1)
-            ReDim table_info.Field.Type(dt.Columns.Count - 1)
-            ReDim table_info.Field.Pointer(dt.Columns.Count - 1)
-            For j As Integer = 0 To dt.Columns.Count - 1
-                '字段名称
-                table_info.Field.Name(j) = dt.Columns(j).ColumnName
-                '字段类型
-                table_info.Field.Type(j) = dt.Columns(j).DataType
-                dic(table_info.Field.Name(j)) = j
-            Next
-            '获取主键信息
-            Dim cols() As DataColumn = dt.PrimaryKey
-            ReDim table_info.Field.PrimaryKey(cols.Length - 1)
-            ReDim table_info.Field.PrimaryKeyIndex(cols.Length - 1)
-            For j As Integer = 0 To cols.Length - 1
-                table_info.Field.PrimaryKey(j) = cols(j).ColumnName
-                table_info.Field.PrimaryKeyIndex(j) = dic(cols(j).ColumnName)
-            Next
-
-            Tables(i) = table_info
-        Next
-
-        Return Tables
-    End Function
     ''' <summary>
     ''' 字段是否链接了其他表的信息，-1是没有，大于-1就是其他表的下标
     ''' 不放到GetTables里，是因为表出现的顺序是不确定的，DB_Info.DicTableIndex有可能还没完成初始化
@@ -143,7 +103,7 @@ Module MFunc
 
         Return 1
     End Function
-    Private Function ExtendFieldItem(ByRef Table_Info As TableInfo) As Integer
+    Private Function ExtendFieldItem(ByRef Table_Info As CSQLite.TableInfo) As Integer
         '报价产品：Select A.名称,B.名称 As 用户,C.名称 As 产品名称,C.型号 As 产品型号,A.数量,A.金额,A.时间,A.备注 From 报价产品 A,用户 B,产品 C Where A.用户ID=B.ID And A.产品ID=C.ID
         Dim strSelect As String = "Select "
         Dim strTables As String = " From " & Table_Info.Name
@@ -183,7 +143,7 @@ Module MFunc
     ''' <param name="extend_field"></param>
     ''' <returns></returns>
     ''' <remarks></remarks>
-    Private Function DGExtendFieldItem(ByRef Table_Info As TableInfo,
+    Private Function DGExtendFieldItem(ByRef Table_Info As CSQLite.TableInfo,
                                        ByRef strSelect As String,
                                        ByRef strTables As String,
                                        ByRef strWhere As String,
@@ -221,22 +181,6 @@ Module MFunc
     End Function
 
     ''' <summary>
-    ''' 执行查找
-    ''' </summary>
-    ''' <param name="DBPath"></param>
-    ''' <param name="StrSql"></param>
-    ''' <returns></returns>
-    ''' <remarks></remarks>
-    Function DoSearch(ByVal DBPath As String, ByVal StrSql As String) As DataTable
-        Dim c_ado As New CADO(DBPath)
-        c_ado.StrSql = StrSql
-        Dim dt As DataTable = c_ado.GetData()
-        c_ado = Nothing
-
-        Return dt
-    End Function
-
-    ''' <summary>
     ''' 备份文件
     ''' </summary>
     ''' <param name="FileName"></param>
@@ -249,6 +193,12 @@ Module MFunc
 
         IO.File.Copy(FileName, newFile)
 
+        Return True
+    End Function
+
+    Function SetFromPos(ByRef f As Object) As Boolean
+        f.Left = 60
+        f.Top = 60
         Return True
     End Function
 End Module
